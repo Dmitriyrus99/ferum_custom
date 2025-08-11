@@ -1,0 +1,47 @@
+System overview
+Ferum Customizations is built on ERPNext (Frappe v15) and automates key processes of a fire safety company: project and contract management, service request processing, report and invoice generation, HR/salary management and KPI analytics
+
+Architecture
+The hybrid scheme combines monolithic ERPNext (master data and DocTypes) with an external web application: FastAPI/Node.js backend and React frontend for advanced interfaces. Components interact via REST and webhooks, which allows evolution towards microservices
+
+Key business processes
+Project & Contract Management – creating/maintaining projects and objects, notifications and uniqueness checks
+
+Service Request Management – registration and routing of requests, notifications, SLA control
+
+Work Reporting – generating a ServiceReport with a list of works and attachments, automatic closure of requests
+
+Invoicing & Payments – invoicing clients, accounting for incoming contractor invoices, synchronization with Google Sheets
+
+HR & Payroll Management – calculating salaries via PayrollEntryCustom and access rights control
+
+Document & Attachment Management – centralized work with files and uploading to Google Drive
+
+Monitoring & Analytics – collecting metrics, logging and KPI analytics
+
+Technology stack
+ERPNext/Frappe, FastAPI (Python 3.10+), React (TS/JS), bots on Aiogram/WhatsApp, Google Workspace (Sheets, Drive), Docker Compose, GitHub Actions, Prometheus and Sentry, JWT authentication with 2FA, Nginx and rate limiting
+
+Main data entities (DocTypes)
+ServiceProject – client contract/project, includes ServiceObjects and requests
+
+ServiceRequest – service request, linked to an object and ServiceReport
+
+ServiceObject – client’s serviced object/equipment
+
+ServiceReport – certificate of work performed with ServiceReportWorkItem and ServiceReportDocumentItem tables
+
+CustomAttachment – unified storage of files and links to Google Drive
+
+Invoice – invoices to clients and contractors, linking to projects and payment statuses
+
+PayrollEntryCustom – advanced accounting of employee salaries
+
+Integrations
+Google Sheets & Drive – invoice synchronization and document upload, table update via API
+
+Telegram/WhatsApp bots – notifications, receiving requests and commands users
+
+Prometheus & Sentry – performance monitoring and error logging for rapid response
+
+Additionally – HTTPS/Nginx, integration with external systems (1C/CRM) via export/import, possible synchronization of Google calendars
