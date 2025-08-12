@@ -1,6 +1,7 @@
 # User Stories
 
-This section collects user stories that describe how different stakeholders interact with the system and the outcomes they expect. These narratives guide development and testing by focusing on user goals.
+- This section collects user stories that describe how different stakeholders interact with the system and the outcomes they expect.
+- These narratives guide development and testing by focusing on user goals.
 
 Stories are currently provided for the following roles:
 
