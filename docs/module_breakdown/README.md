@@ -1,6 +1,7 @@
 # Module Breakdown
 
-This section provides an overview of the custom modules that extend ERPNext for Ferum's operations. Each file below documents a specific module and its responsibilities.
+- This section provides an overview of the custom modules that extend ERPNext for Ferum's operations.
+- Each file below documents a specific module and its responsibilities.
 
 ## Modules
 
@@ -15,4 +16,9 @@ This section provides an overview of the custom modules that extend ERPNext for 
 
 ## Module Interactions
 
-Projects create the framework for service work, linking service objects and establishing contract details. Service requests tie into projects and objects, capturing issues reported by clients. Work reports close requests and feed financial data into the invoicing module and labor metrics into HR & Payroll. The document management module stores attachments shared across these workflows, while the notifications module broadcasts key events to users. Analytics aggregates data from all modules to provide operational insights. All modules leverage ERPNext DocTypes, permissions and APIs to maintain consistency and integrate with the broader ERP system.
+- Projects create the framework for service work, linking service objects and establishing contract details.
+- Service requests tie into projects and objects, capturing issues reported by clients.
+- Work reports close requests and feed financial data into the invoicing module and labor metrics into HR & Payroll.
+- The document management module stores attachments shared across these workflows, while the notifications module broadcasts key events to users.
+- Analytics aggregates data from all modules to provide operational insights.
+- All modules leverage ERPNext DocTypes, permissions and APIs to maintain consistency and integrate with the broader ERP system.
