@@ -24,13 +24,20 @@ class Invoice(Document):
             frappe.throw(_("Due Date is required when sending an Invoice."))
         elif old_status == "Sent" and self.status == "Paid" and self.amount <= 0:
             frappe.throw(_("Cannot mark Invoice as Paid with zero or negative amount."))
-        # Add more transitions as per the workflow diagram in Technical_Specification_full.md
-        # Draft --> Sent : Отправить клиенту / Утвердить к оплате
-        # Sent --> Paid : Отметить как оплаченный
-        # Sent --> Overdue : Просрочен
-        # Overdue --> Paid : Отметить как оплаченный
-        # Draft --> Cancelled : Отменить
-        # Sent --> Cancelled : Отменить
+        elif old_status == "Draft" and self.status == "Sent":
+            pass # Allowed
+        elif old_status == "Sent" and self.status == "Paid":
+            pass # Allowed
+        elif old_status == "Sent" and self.status == "Overdue":
+            pass # Allowed
+        elif old_status == "Overdue" and self.status == "Paid":
+            pass # Allowed
+        elif old_status == "Draft" and self.status == "Cancelled":
+            pass # Allowed
+        elif old_status == "Sent" and self.status == "Cancelled":
+            pass # Allowed
+        elif old_status and old_status != self.status: # Prevent invalid transitions
+            frappe.throw(_(f"Invalid status transition from {old_status} to {self.status}."))
 
     def sync_to_google_sheets(self):
         if not GOOGLE_SHEETS_INTEGRATION_ENABLED:

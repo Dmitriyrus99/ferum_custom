@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from frappe_client import FrappeClient
 
 from ..config import settings
@@ -10,22 +10,66 @@ router = APIRouter()
 frappe_client = FrappeClient(settings.ERP_API_URL, settings.ERP_API_KEY, settings.ERP_API_SECRET)
 
 @router.get("/reports")
-async def get_reports(current_user: str = Depends(has_role(["Project Manager", "Administrator", "Engineer", "Department Head", "Client"]))):
+async def get_reports(current_user: dict = Depends(get_current_user)):
+    filters = {}
+    user_roles = current_user.get("roles", [])
+    user_name = current_user.get("name")
+
+    if "Administrator" in user_roles or "Department Head" in user_roles:
+        # Admins and Department Heads see all reports
+        pass
+    elif "Project Manager" in user_roles:
+        # Project Managers see reports associated with their projects
+        # This requires fetching projects managed by this user and then filtering reports by those projects
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Project Manager role report filtering not fully implemented yet.")
+    elif "Engineer" in user_roles:
+        # Engineers see reports linked to service requests they were assigned to
+        # This requires fetching service requests assigned to the engineer, then filtering reports by those requests
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Engineer role report filtering not fully implemented yet.")
+    elif "Client" in user_roles:
+        # Clients see reports associated with their customer's projects
+        # This requires linking client user to customer, then filtering reports by customer's projects
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Client role report filtering not fully implemented yet.")
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view reports.")
+
     try:
-        # In a real scenario, you would filter reports based on the current_user's permissions
-        reports = frappe_client.get_list("ServiceReport", fields=["name", "service_request", "status", "total_amount"])
+        reports = frappe_client.get_list("ServiceReport", filters=filters, fields=["name", "service_request", "status", "total_amount"])
         return {"reports": reports}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.get("/reports/{report_name}")
-async def get_report(report_name: str, current_user: str = Depends(has_role(["Project Manager", "Administrator", "Engineer", "Department Head", "Client"]))):
+async def get_report(report_name: str, current_user: dict = Depends(get_current_user)):
+    user_roles = current_user.get("roles", [])
+    user_name = current_user.get("name")
+
     try:
         report = frappe_client.get_doc("ServiceReport", report_name)
-        # Add logic to ensure user has permission to view this specific report
+        
+        # Authorization logic for single report
+        if "Administrator" in user_roles or "Department Head" in user_roles:
+            pass # Admins and Department Heads can view any report
+        elif "Project Manager" in user_roles:
+            # PMs can view reports associated with their projects
+            # Need to check if report.service_request.service_project is one of the projects managed by the PM
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Project Manager role report filtering not fully implemented yet.")
+        elif "Engineer" in user_roles:
+            # Engineers can view reports linked to service requests they were assigned to
+            # Need to check if report.service_request.assigned_to matches the engineer
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Engineer role report filtering not fully implemented yet.")
+        elif "Client" in user_roles:
+            # Clients can view reports associated with their customer's projects
+            # Need to check if report.service_request.service_project.customer matches the client's customer_id
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Client role report filtering not fully implemented yet.")
+        else:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this report.")
+
         return {"report": report}
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @router.post("/reports")
 async def create_report(report_data: dict, current_user: str = Depends(has_role(["Project Manager", "Administrator", "Engineer"]))):

@@ -13,7 +13,7 @@
     },
     {
       "fieldname": "description",
-      "fieldtype": "Small Text",
+      "fieldtype": "Text",
       "label": "Description"
     }
   ],

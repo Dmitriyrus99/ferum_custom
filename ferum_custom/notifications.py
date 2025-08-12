@@ -62,3 +62,63 @@ def notify_service_request_status_change(doc, method):
     #     subject=f"Service Request {doc.name} Update",
     #     content=message
     # )
+
+def notify_new_service_report(doc, method):
+    # Notify relevant parties (e.g., Project Manager, Admin) about a new Service Report
+    message = f"New Service Report created: {doc.name} for Service Request {doc.service_request}. Status: {doc.status}."
+    
+    # Example: Send to a specific Telegram chat ID
+    pm_admin_chat_id = 123456789 # REPLACE WITH ACTUAL CHAT ID
+    send_telegram_notification_to_fastapi(pm_admin_chat_id, message)
+
+    # Example: Send email notification
+    # frappe.sendmail(
+    #     recipients=["pm@example.com", "admin@example.com"],
+    #     subject=f"New Service Report: {doc.name}",
+    #     content=message
+    # )
+
+def notify_service_report_status_change(doc, method):
+    # Notify relevant parties about Service Report status change (e.g., Submitted, Approved)
+    message = f"Service Report {doc.name} status changed to {doc.status}. For Service Request {doc.service_request}."
+
+    # Example: Send to a specific Telegram chat ID
+    pm_admin_chat_id = 123456789 # REPLACE WITH ACTUAL CHAT ID
+    send_telegram_notification_to_fastapi(pm_admin_chat_id, message)
+
+    # Example: Send email notification
+    # frappe.sendmail(
+    #     recipients=["pm@example.com", "admin@example.com"],
+    #     subject=f"Service Report {doc.name} Status Update",
+    #     content=message
+    # )
+
+def notify_new_invoice(doc, method):
+    # Notify relevant parties (e.g., Accountant, Admin) about a new Invoice
+    message = f"New Invoice created: {doc.name} for {doc.counterparty_name}. Amount: {doc.amount}. Status: {doc.status}."
+    
+    # Example: Send to a specific Telegram chat ID
+    accountant_admin_chat_id = 123456789 # REPLACE WITH ACTUAL CHAT ID
+    send_telegram_notification_to_fastapi(accountant_admin_chat_id, message)
+
+    # Example: Send email notification
+    # frappe.sendmail(
+    #     recipients=["accountant@example.com", "admin@example.com"],
+    #     subject=f"New Invoice: {doc.name}",
+    #     content=message
+    # )
+
+def notify_invoice_status_change(doc, method):
+    # Notify relevant parties about Invoice status change (e.g., Paid, Overdue)
+    message = f"Invoice {doc.name} status changed to {doc.status}. For {doc.counterparty_name}. Amount: {doc.amount}."
+
+    # Example: Send to a specific Telegram chat ID
+    accountant_admin_chat_id = 123456789 # REPLACE WITH ACTUAL CHAT ID
+    send_telegram_notification_to_fastapi(accountant_admin_chat_id, message)
+
+    # Example: Send email notification
+    # frappe.sendmail(
+    #     recipients=["accountant@example.com", "admin@example.com"],
+    #     subject=f"Invoice {doc.name} Status Update",
+    #     content=message
+    # )

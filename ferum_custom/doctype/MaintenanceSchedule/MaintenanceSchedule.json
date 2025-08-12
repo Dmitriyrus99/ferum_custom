@@ -1,7 +1,8 @@
 {
   "name": "MaintenanceSchedule",
   "doctype": "DocType",
-  "autoname": "MS-.####",
+  "autoname": "MSCH-.####",
+  "is_submittable": 0,
   "fields": [
     {
       "fieldname": "schedule_name",
@@ -10,11 +11,35 @@
       "reqd": 1
     },
     {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "label": "Customer",
+      "options": "Customer",
+      "reqd": 1
+    },
+    {
+      "fieldname": "service_project",
+      "fieldtype": "Link",
+      "label": "Service Project",
+      "options": "ServiceProject"
+    },
+    {
       "fieldname": "frequency",
       "fieldtype": "Select",
       "label": "Frequency",
-      "options": "Daily\nWeekly\nMonthly\nQuarterly\nAnnually",
+      "options": "Daily\nWeekly\nMonthly\nAnnually",
       "reqd": 1
+    },
+    {
+      "fieldname": "start_date",
+      "fieldtype": "Date",
+      "label": "Start Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "end_date",
+      "fieldtype": "Date",
+      "label": "End Date"
     },
     {
       "fieldname": "next_due_date",
@@ -23,27 +48,15 @@
       "reqd": 1
     },
     {
-      "fieldname": "last_generated_date",
-      "fieldtype": "Date",
-      "label": "Last Generated Date"
+      "fieldname": "description",
+      "fieldtype": "Text",
+      "label": "Description"
     },
     {
-      "fieldname": "service_objects",
+      "fieldname": "items",
       "fieldtype": "Table",
-      "label": "Service Objects",
+      "label": "Items",
       "options": "MaintenanceScheduleItem"
-    },
-    {
-      "fieldname": "project",
-      "fieldtype": "Link",
-      "label": "Project",
-      "options": "ServiceProject"
-    },
-    {
-      "fieldname": "customer",
-      "fieldtype": "Link",
-      "label": "Customer",
-      "options": "Customer"
     }
   ],
   "permissions": [

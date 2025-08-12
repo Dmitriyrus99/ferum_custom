@@ -140,6 +140,14 @@ doc_events = {
 	"ServiceRequest": {
 		"after_insert": "ferum_custom.notifications.notify_new_service_request",
 		"on_update": "ferum_custom.notifications.notify_service_request_status_change"
+	},
+	"ServiceReport": {
+		"after_insert": "ferum_custom.notifications.notify_new_service_report",
+		"on_submit": "ferum_custom.notifications.notify_service_report_status_change"
+	},
+	"Invoice": {
+		"after_insert": "ferum_custom.notifications.notify_new_invoice",
+		"on_update": "ferum_custom.notifications.notify_invoice_status_change"
 	}
 }
 

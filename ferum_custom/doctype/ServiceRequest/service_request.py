@@ -62,12 +62,13 @@ class ServiceRequest(Document):
 
             # Send Telegram notification (assuming FastAPI backend is running and accessible)
             # In a real system, you would get the chat_id from user settings or a config DocType
+            # TODO: Replace placeholders with actual configuration values (e.g., from a custom settings DocType)
             telegram_chat_id = 123456789 # REPLACE WITH ACTUAL CHAT ID OF ADMIN/DEPT HEAD
             fastapi_backend_url = "http://localhost:8000/api/v1/send_telegram_notification" # Adjust if FastAPI is on different host/port
             
             try:
                 # This requires a valid JWT token from the FastAPI backend for authentication
-                # In a real Frappe app, you'd have a secure way to get/store this token
+                # TODO: Implement secure way to get/store this token
                 headers = {"Authorization": "Bearer YOUR_FASTAPI_JWT_TOKEN"} # REPLACE WITH ACTUAL JWT TOKEN
                 payload = {"chat_id": telegram_chat_id, "text": message}
                 response = requests.post(fastapi_backend_url, headers=headers, json=payload)
@@ -75,3 +76,27 @@ class ServiceRequest(Document):
                 frappe.log_by_page(f"SLA breach notification sent to Telegram for {self.name}", "SLA Notification")
             except requests.exceptions.RequestException as e:
                 frappe.log_error(f"Failed to send SLA breach Telegram notification for {self.name}: {e}", "SLA Notification Error")
+
+            # Send Email notification
+            # TODO: Determine recipient email addresses (e.g., from user roles, project managers, etc.)
+            recipient_email = "admin@example.com" # REPLACE WITH ACTUAL RECIPIENT EMAIL
+            subject = f"SLA Breach Alert: Service Request {self.name}"
+            body = f"Dear Team,
+
+The Service Level Agreement for Service Request {self.name} has been breached.
+
+Details:
+Title: {self.title}
+Priority: {self.priority}
+Due Date: {self.sla_deadline}
+
+Please take immediate action.
+
+Regards,
+System"
+            
+            try:
+                frappe.sendmail(recipients=recipient_email, subject=subject, message=body)
+                frappe.log_by_page(f"SLA breach email notification sent for {self.name}", "SLA Notification")
+            except Exception as e:
+                frappe.log_error(f"Failed to send SLA breach email notification for {self.name}: {e}", "SLA Notification Error")
