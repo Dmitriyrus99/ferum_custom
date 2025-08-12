@@ -1,8 +1,15 @@
-## How to Build and Run Ferum Customizations (Battle-Tested Docker Deployment)
+# Ferum Customizations - Deployment Guide
 
-This document provides a comprehensive guide on how to set up and run the Ferum Customizations project using Docker Compose, ensuring automatic application setup, updates, and migrations.
+This guide provides step-by-step instructions to deploy the Ferum Customizations project using Docker Compose. It covers setting up the environment, running the application, and basic management.
 
-### 1. Prepare Environment Variables (.env)
+## Prerequisites
+
+Before you begin, ensure you have the following installed on your server or local machine:
+
+*   **Docker:** [Install Docker Engine](https://docs.docker.com/engine/install/)
+*   **Docker Compose:** [Install Docker Compose](https://docs.docker.com/compose/install/)
+
+## 1. Prepare Environment Variables (.env)
 
 Create a `.env` file in the root directory of your project (`ferum_custom/`) and populate it with the following variables. Replace placeholder values (`your_...`) with your actual secure credentials.
 
@@ -40,13 +47,11 @@ GOOGLE_DRIVE_FOLDER_ID=your_google_drive_folder_id
 FASTAPI_INTERNAL_JWT_TOKEN=your_fastapi_internal_jwt_token
 ```
 
-**Note:** If your repository is private, refer to section 5 for authentication options (token in URL or SSH key).
+**Important:** Adjust the values for your environment and keep the `.env` file out of version control for security reasons.
 
-### 2. Basic docker-compose.yml
+## 2. Setup docker-compose.yml
 
-This is a simplified development variant with one backend container (Bench), plus Postgres and Redis. For production, you would typically add separate workers (scheduler, queue-*) and a reverse proxy.
-
-Create a `docker-compose.yml` file in the project root (`ferum_custom/`) with the following content:
+Create a `docker-compose.yml` file in the project root (`ferum_custom/`) with the following content. This configuration includes the ERPNext backend, PostgreSQL database, Redis, and a one-time `setup` service to automate application installation and migrations.
 
 ```yaml
 services:
@@ -81,16 +86,6 @@ services:
     image: redis:7
     command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
 
-volumes:
-  bench-vol:
-  pgdata:
-```
-
-### 3. One-time "setup" service for automatic app installation and migrations
-
-Add the following `setup` service to your `docker-compose.yml`. This service will run once during `docker compose up`, pull your application repository, install the app on the ERPNext site, and run migrations. It is idempotent, meaning repeated runs will not cause issues.
-
-```yaml
   setup:
     image: frappe/bench:${BENCH_TAG}
     container_name: frappe-setup
@@ -144,16 +139,15 @@ Add the following `setup` service to your `docker-compose.yml`. This service wil
       echo "[setup] Done."
       '
     restart: "no"
+
+volumes:
+  bench-vol:
+  pgdata:
 ```
 
-**How it works:**
-*   The `setup` service uses the same `bench-vol` volume as the `backend` service, so everything it downloads/installs will be visible to the `backend`.
-*   On the first run, it creates the site, then performs `get-app`, `install-app`, and `migrate`.
-*   On subsequent deployments, `setup` performs a `git pull` and `migrate` again.
+## 3. Running the Project
 
-### 4. Running the Project
-
-To start the services and run the setup:
+To start all services and run the one-time setup:
 
 ```bash
 docker compose up -d postgres redis
@@ -163,23 +157,23 @@ docker compose run --rm setup
 docker compose up -d
 ```
 
-### 5. Updating the Application (Git/CI)
+## 4. Updating the Application
 
-To update the application after pushing changes to your repository, simply restart the `setup` service:
+After pushing new code to your repository, update an existing deployment by restarting the `setup` service:
 
 ```bash
 docker compose run --rm setup
 docker compose restart backend
 ```
 
-### 6. Access the Applications
+## 5. Access the Applications
 
 *   **ERPNext:** Access via your web browser at `http://localhost:8000` (or the port configured in your `docker-compose.yml`). Login with `Administrator` and the `ADMIN_PASSWORD` you set in `.env`.
 
 *   **FastAPI Backend:** The FastAPI backend should be accessible at `http://localhost:8000/api/v1` (or the port you configured). You can test the health check endpoint:
     `http://localhost:8000/api/v1/health`
 
-### 7. Running the Telegram Bot
+## 6. Running the Telegram Bot
 
 The Telegram bot runs as a separate Python process. Ensure you have set `TELEGRAM_BOT_TOKEN` in your `.env` file.
 
@@ -192,73 +186,9 @@ python -m bot.telegram_bot
 
 **Note:** Replace `YOUR_FASTAPI_JWT_TOKEN` in `backend/bot/telegram_bot.py` and `ferum_custom/notifications.py` with a valid token for testing.
 
-### 8. How to Pull a Private Repository
+## 7. Troubleshooting
 
-Choose one method:
-
-**A. Via Token in URL (simpler)**
-
-Set `FERUM_CUSTOMS_REPO` in your `.env` like this:
-
-```dotenv
-FERUM_CUSTOMS_REPO=https://<GITHUB_TOKEN>@github.com/your-org/ferum_customs.git
-```
-
-The token should have `repo:read` permissions. Do not store it in Git – put it in `.env` or CI secrets.
-
-**B. Via SSH Key (more secure)**
-
-Generate a deploy key (read-only) and add it to your repository settings (`repo → Settings → Deploy keys`).
-
-Mount the key into the container and set `GIT_SSH_COMMAND` in your `docker-compose.yml` for the `setup` service:
-
-```yaml
-  setup:
-    volumes:
-      - bench-vol:/home/frappe/frappe-bench
-      - ./deploy_keys/id_ed25519:/home/frappe/.ssh/id_ed25519:ro
-      - ./deploy_keys/known_hosts:/home/frappe/.ssh/known_hosts:ro
-    environment:
-      GIT_SSH_COMMAND: "ssh -i /home/frappe/.ssh/id_ed25519 -o UserKnownHostsFile=/home/frappe/.ssh/known_hosts"
-```
-
-And change `FERUM_CUSTOMS_REPO` in your `.env` to the SSH URL:
-
-```dotenv
-FERUM_CUSTOMS_REPO=git@github.com:your-org/ferum_customs.git
-```
-
-### 9. Daily Routine (Useful Commands)
-
-```bash
-# Check availability
-curl http://127.0.0.1:8000/api/method/ping
-
-# Bench status
-docker compose exec -u frappe backend bash -lc 'bench doctor'
-
-# Force migrations
-docker compose exec -u frappe backend bash -lc 'bench --site ${SITE_NAME} migrate'
-
-# Update only your app
-docker compose exec -u frappe backend bash -lc '
-  cd apps/ferum_customs && git fetch --all && git pull && cd - && bench build && bench --site ${SITE_NAME} migrate
-'
-```
-
-### 10. Stop the Project
-
-To stop all running Docker containers and remove their networks and volumes (optional):
-
-```bash
-docker compose down
-# To remove volumes (data will be lost!):
-docker compose down --volumes
-```
-
-## Troubleshooting
-
-*   **Container issues:** Use `docker-compose logs <service_name>` to view logs for a specific service (e.g., `docker-compose logs erpnext`).
+*   **Container issues:** Use `docker-compose logs <service_name>` to view logs for a specific service (e.g., `docker-compose logs backend`).
 *   **Permissions:** Ensure your user has appropriate permissions to run Docker commands.
 *   **Environment variables:** Double-check that your `.env` file is correctly configured and located in the project root.
 

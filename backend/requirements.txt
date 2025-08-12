@@ -11,3 +11,7 @@ pytest # For running tests
 fastapi-limiter # For rate limiting
 redis # For fastapi-limiter with Redis
 prometheus_client # For exposing Prometheus metrics
+requests # For making HTTP requests (e.g., Telegram notifications)
+gspread # For Google Sheets integration
+google-api-python-client # For Google Drive integration
+google-auth # For Google Drive integration

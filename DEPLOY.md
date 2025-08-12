@@ -1,7 +1,3 @@
-# Deployment Guide
-
-This project is deployed using Docker Compose. The steps below outline the minimal setup required to bring up the stack on a new host.
-
 ## 1. Configure environment
 
 Create a `.env` file in the repository root and fill in the required variables. The example below covers the essential options:
@@ -28,6 +24,16 @@ REDIS_PASSWORD=changeme
 # Application source
 FERUM_CUSTOMS_REPO=https://github.com/your-org/ferum_customs.git
 FERUM_CUSTOMS_BRANCH=main
+
+# Google Drive Integration
+# Path to your Google Drive service account JSON key file (relative to site_path/private/keys/)
+# Example: google_drive_service_account.json
+GOOGLE_DRIVE_SERVICE_ACCOUNT_KEY_FILENAME=google_drive_service_account.json
+# ID of the Google Drive folder where attachments will be stored
+GOOGLE_DRIVE_FOLDER_ID=your_google_drive_folder_id
+
+# FastAPI Internal JWT Token (for Frappe to FastAPI calls)
+FASTAPI_INTERNAL_JWT_TOKEN=your_fastapi_internal_jwt_token
 ```
 
 Adjust the values for your environment and keep the file out of version control.

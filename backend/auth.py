@@ -41,18 +41,33 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    return verify_token(token, credentials_exception)
+    username = verify_token(token, credentials_exception)
+
+    try:
+        user_doc = frappe_client.get_doc("User", username)
+        user_roles = [role.role for role in user_doc.roles]
+        
+        user_data = {
+            "name": username,
+            "roles": user_roles
+        }
+
+        if "Project Manager" in user_roles:
+            # Assuming User DocType has a child table 'custom_managed_projects' with a 'project' field
+            managed_projects = [p.project for p in user_doc.get("custom_managed_projects", [])]
+            user_data["managed_projects"] = managed_projects
+        
+        if "Client" in user_roles:
+            # Assuming User DocType has a custom field 'custom_customer_id'
+            user_data["customer_id"] = user_doc.get("custom_customer_id")
+
+        return user_data
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to retrieve user details: {e}")
 
 def has_role(required_roles: list[str]):
-    def role_checker(current_user: str = Depends(get_current_user)):
-        try:
-            user_doc = frappe_client.get_doc("User", current_user)
-            # Frappe stores roles in a child table named 'roles' with a 'role' field
-            user_roles = [role.role for role in user_doc.roles]
-        except Exception as e:
-            # Log the error and raise HTTPException if ERPNext lookup fails
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to retrieve user roles: {e}")
-
+    def role_checker(current_user: dict = Depends(get_current_user)):
+        user_roles = current_user.get("roles", [])
         if not any(role in user_roles for role in required_roles):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
         return current_user
