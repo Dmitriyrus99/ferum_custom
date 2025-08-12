@@ -20,15 +20,23 @@ async def get_reports(current_user: dict = Depends(get_current_user)):
         pass
     elif "Project Manager" in user_roles:
         # Project Managers see reports associated with their projects
-        # This requires fetching projects managed by this user and then filtering reports by those projects
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Project Manager role report filtering not fully implemented yet.")
+        managed_projects = current_user.get("managed_projects")
+        if managed_projects:
+            # Reports are linked to ServiceRequest, which is linked to ServiceProject
+            # This requires a more complex query or fetching all relevant ServiceRequests first
+            # For now, a placeholder:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Project Manager role report filtering not fully implemented yet.")
+        else:
+            return {"reports": []}
     elif "Engineer" in user_roles:
         # Engineers see reports linked to service requests they were assigned to
         # This requires fetching service requests assigned to the engineer, then filtering reports by those requests
+        # For now, a placeholder:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Engineer role report filtering not fully implemented yet.")
     elif "Client" in user_roles:
         # Clients see reports associated with their customer's projects
         # This requires linking client user to customer, then filtering reports by customer's projects
+        # For now, a placeholder:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Client role report filtering not fully implemented yet.")
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view reports.")

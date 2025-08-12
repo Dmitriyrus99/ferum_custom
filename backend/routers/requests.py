@@ -20,23 +20,21 @@ async def get_requests(current_user: dict = Depends(get_current_user)):
         pass
     elif "Project Manager" in user_roles:
         # Project Managers see requests associated with their projects
-        # This assumes ServiceRequest has a link to ServiceProject, and ServiceProject has a project_manager field
-        # You would need to get projects managed by this user and then filter requests by those projects
-        # For simplicity, let's assume a direct link or a way to get projects from user
-        # For now, a placeholder:
-        # projects_managed = frappe_client.get_list("ServiceProject", filters={"project_manager": user_name}, fields=["name"])
-        # if projects_managed: filters["service_project"] = ["in", [p.name for p in projects_managed]]
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Project Manager role request filtering not fully implemented yet.")
+        managed_projects = current_user.get("managed_projects")
+        if managed_projects:
+            filters["service_project"] = ["in", managed_projects]
+        else:
+            return {"requests": []}
     elif "Engineer" in user_roles:
         # Engineers see requests assigned to them
         filters["assigned_to"] = user_name
     elif "Client" in user_roles:
         # Clients see requests associated with their customer
-        # Similar to Project filtering, need to link client user to customer
-        # For now, a placeholder:
-        # customer_id = frappe_client.get_value("User", user_name, "customer_id")
-        # if customer_id: filters["customer"] = customer_id
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Client role request filtering not fully implemented yet.")
+        customer_id = current_user.get("customer_id")
+        if customer_id:
+            filters["customer"] = customer_id
+        else:
+            return {"requests": []}
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view requests.")
 
@@ -58,17 +56,16 @@ async def get_request(request_name: str, current_user: dict = Depends(get_curren
         if "Administrator" in user_roles or "Office Manager" in user_roles:
             pass # Admins and Office Managers can view any request
         elif "Project Manager" in user_roles:
-            # PMs can view requests associated with their projects
-            # Need to check if request.service_project is one of the projects managed by the PM
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Project Manager role request filtering not fully implemented yet.")
+            managed_projects = current_user.get("managed_projects", [])
+            if request.get("service_project") not in managed_projects:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this request.")
         elif "Engineer" in user_roles:
-            # Engineers can view requests assigned to them
             if request.get("assigned_to") != user_name:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this request.")
         elif "Client" in user_roles:
-            # Clients can view requests associated with their customer
-            # Need to check if request.customer matches the client's customer_id
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Client role request filtering not fully implemented yet.")
+            customer_id = current_user.get("customer_id")
+            if not customer_id or request.get("customer") != customer_id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this request.")
         else:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this request.")
 
@@ -84,7 +81,7 @@ async def create_request(request_data: dict, current_user: str = Depends(has_rol
         new_request = frappe_client.insert("ServiceRequest", request_data)
         return {"message": "Service Request created successfully", "request": new_request}
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/requests/{request_name}/status")
 async def update_request_status(request_name: str, status_data: dict, current_user: str = Depends(has_role(["Project Manager", "Administrator", "Engineer", "Department Head"]))):
@@ -118,7 +115,7 @@ async def upload_request_attachment(request_name: str, file: UploadFile = File(.
             service_request_doc.photos = []
         service_request_doc.photos.append({"photo": new_attachment.name}) # Assuming 'photo' field in child table links to CustomAttachment name
         
-        updated_service_request = frappe_client.update("ServiceRequest", service_request_doc.name, {"photos": service_request_doc.photos})
+        updated_service_request = frappe.client.update("ServiceRequest", service_request_doc.name, {"photos": service_request_doc.photos})
 
         return {"message": "Attachment uploaded and linked successfully", "attachment": new_attachment.name}
     except Exception as e:

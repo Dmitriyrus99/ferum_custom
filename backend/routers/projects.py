@@ -12,7 +12,6 @@ frappe_client = FrappeClient(settings.ERP_API_URL, settings.ERP_API_KEY, setting
 @router.get("/projects")
 async def get_projects(current_user: dict = Depends(get_current_user)):
     filters = {}
-    # Assuming current_user contains 'roles' and 'email' or 'name' (Frappe user ID)
     user_roles = current_user.get("roles", [])
     user_name = current_user.get("name")
 
@@ -21,19 +20,22 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
         pass
     elif "Project Manager" in user_roles:
         # Project Managers see projects they are associated with
-        # This assumes a link field in ServiceProject to Project Manager (e.g., 'project_manager_email' or 'assigned_to')
-        # For now, let's assume a custom field 'project_manager' in ServiceProject that stores the user's email or name
-        filters["project_manager"] = user_name # Or current_user.get("email")
+        # Assuming 'current_user' dict contains 'managed_projects' list for PMs
+        managed_projects = current_user.get("managed_projects")
+        if managed_projects:
+            filters["name"] = ["in", managed_projects]
+        else:
+            # If PM manages no projects, return empty list
+            return {"projects": []}
     elif "Client" in user_roles:
         # Clients see projects associated with their customer
-        # This assumes the client user is linked to a Customer DocType, and ServiceProject has a 'customer' field
-        # You would need to fetch the customer linked to the current_user
-        # For simplicity, let's assume a direct link or a way to get customer from user
-        # In a real Frappe setup, you'd query User or a custom DocType to get the customer_id
-        # For now, a placeholder: 
-        # customer_id = frappe_client.get_value("User", user_name, "customer_id") # Example if user has customer_id field
-        # if customer_id: filters["customer"] = customer_id
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Client role project filtering not fully implemented yet.")
+        # Assuming 'current_user' dict contains 'customer_id' for Clients
+        customer_id = current_user.get("customer_id")
+        if customer_id:
+            filters["customer"] = customer_id
+        else:
+            # If client is not linked to a customer, return empty list
+            return {"projects": []}
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view projects.")
 
@@ -56,15 +58,14 @@ async def get_project(project_name: str, current_user: dict = Depends(get_curren
             pass # Admins can view any project
         elif "Project Manager" in user_roles:
             # PMs can view projects they manage
-            if project.get("project_manager") != user_name: # Assuming 'project_manager' field in ServiceProject
+            managed_projects = current_user.get("managed_projects", [])
+            if project_name not in managed_projects:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this project.")
         elif "Client" in user_roles:
             # Clients can view projects associated with their customer
-            # This requires fetching the customer linked to the current_user and comparing with project.customer
-            # For now, a placeholder:
-            # customer_id = frappe_client.get_value("User", user_name, "customer_id")
-            # if project.get("customer") != customer_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Client role project filtering not fully implemented yet.")
+            customer_id = current_user.get("customer_id")
+            if not customer_id or project.get("customer") != customer_id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this project.")
         else:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this project.")
 

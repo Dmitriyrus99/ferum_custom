@@ -20,15 +20,24 @@ async def get_invoices(current_user: dict = Depends(get_current_user)):
         pass
     elif "Project Manager" in user_roles:
         # Project Managers see invoices associated with their projects
-        # This requires fetching projects managed by this user and then filtering invoices by those projects
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Project Manager role invoice filtering not fully implemented yet.")
+        managed_projects = current_user.get("managed_projects")
+        if managed_projects:
+            filters["project"] = ["in", managed_projects]
+        else:
+            return {"invoices": []}
     elif "Client" in user_roles:
         # Clients see invoices where they are the counterparty
-        # This requires linking client user to customer, then filtering invoices by counterparty_name or customer ID
-        # For now, a placeholder:
-        # customer_id = frappe_client.get_value("User", user_name, "customer_id")
-        # if customer_id: filters["counterparty_name"] = frappe_client.get_value("Customer", customer_id, "customer_name")
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Client role invoice filtering not fully implemented yet.")
+        customer_id = current_user.get("customer_id")
+        if customer_id:
+            # Assuming Invoice has a 'customer' field or 'counterparty_name' can be mapped to customer
+            # For simplicity, let's assume 'counterparty_name' directly matches the customer name
+            customer_name = frappe_client.get_value("Customer", customer_id, "customer_name")
+            if customer_name:
+                filters["counterparty_name"] = customer_name
+            else:
+                return {"invoices": []}
+        else:
+            return {"invoices": []}
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view invoices.")
 
@@ -50,13 +59,17 @@ async def get_invoice(invoice_name: str, current_user: dict = Depends(get_curren
         if "Administrator" in user_roles or "Accountant" in user_roles or "Office Manager" in user_roles:
             pass # Admins, Accountants, and Office Managers can view any invoice
         elif "Project Manager" in user_roles:
-            # PMs can view invoices associated with their projects
-            # Need to check if invoice.project is one of the projects managed by the PM
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Project Manager role invoice filtering not fully implemented yet.")
+            managed_projects = current_user.get("managed_projects", [])
+            if invoice.get("project") not in managed_projects:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this invoice.")
         elif "Client" in user_roles:
-            # Clients can view invoices where they are the counterparty
-            # Need to check if invoice.counterparty_name matches the client's customer_name
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Client role invoice filtering not fully implemented yet.")
+            customer_id = current_user.get("customer_id")
+            if not customer_id:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this invoice.")
+            
+            customer_name = frappe_client.get_value("Customer", customer_id, "customer_name")
+            if invoice.get("counterparty_name") != customer_name:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this invoice.")
         else:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this invoice.")
 
