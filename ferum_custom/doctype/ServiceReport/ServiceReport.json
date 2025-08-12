@@ -22,7 +22,7 @@
       "fieldname": "status",
       "fieldtype": "Select",
       "label": "Status",
-      "options": "Draft\nSubmitted\nCancelled",
+      "options": "Draft\nSubmitted\nApproved\nArchived\nCancelled",
       "default": "Draft"
     },
     {

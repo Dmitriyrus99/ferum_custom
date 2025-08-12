@@ -1,22 +1,20 @@
 {
-  "name": "ServiceReportDocumentItem",
+  "name": "MaintenanceScheduleItem",
   "doctype": "DocType",
   "is_submittable": 0,
   "istable": 1,
   "fields": [
     {
-      "fieldname": "custom_attachment",
+      "fieldname": "service_object",
       "fieldtype": "Link",
-      "label": "Attachment",
-      "options": "CustomAttachment",
+      "label": "Service Object",
+      "options": "ServiceObject",
       "reqd": 1
     },
     {
-      "fieldname": "file_type",
-      "fieldtype": "Data",
-      "label": "File Type",
-      "read_only": 1,
-      "fetch_from": "custom_attachment.file_type"
+      "fieldname": "description",
+      "fieldtype": "Small Text",
+      "label": "Description"
     }
   ],
   "permissions": [

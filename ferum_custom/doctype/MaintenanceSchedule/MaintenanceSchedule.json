@@ -1,0 +1,61 @@
+{
+  "name": "MaintenanceSchedule",
+  "doctype": "DocType",
+  "autoname": "MS-.####",
+  "fields": [
+    {
+      "fieldname": "schedule_name",
+      "fieldtype": "Data",
+      "label": "Schedule Name",
+      "reqd": 1
+    },
+    {
+      "fieldname": "frequency",
+      "fieldtype": "Select",
+      "label": "Frequency",
+      "options": "Daily\nWeekly\nMonthly\nQuarterly\nAnnually",
+      "reqd": 1
+    },
+    {
+      "fieldname": "next_due_date",
+      "fieldtype": "Date",
+      "label": "Next Due Date",
+      "reqd": 1
+    },
+    {
+      "fieldname": "last_generated_date",
+      "fieldtype": "Date",
+      "label": "Last Generated Date"
+    },
+    {
+      "fieldname": "service_objects",
+      "fieldtype": "Table",
+      "label": "Service Objects",
+      "options": "MaintenanceScheduleItem"
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "Project",
+      "options": "ServiceProject"
+    },
+    {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "label": "Customer",
+      "options": "Customer"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0
+    }
+  ]
+}

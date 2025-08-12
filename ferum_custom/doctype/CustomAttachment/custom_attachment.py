@@ -17,38 +17,39 @@ class CustomAttachment(Document):
             frappe.msgprint(_("Google Drive integration is disabled. google-api-python-client library not found."))
             return
 
+        # --- START Google Drive Upload Implementation --- #
+        # This section needs to be replaced with actual Google Drive API calls.
+        # You will need to get the actual file content from somewhere.
+        # In Frappe, files are usually uploaded to the server first, then processed.
+        # You might need to add a temporary file path or base64 content to this DocType
+        # or retrieve it from Frappe's file storage.
+
         try:
-            # Authenticate with Google Drive API using service account credentials
-            # Assumes GOOGLE_APPLICATION_CREDENTIALS env var is set or key file is in default location
-            # Or you might load credentials from Frappe settings
+            # 1. Authenticate with Google Drive API
+            #    Ensure your service account JSON key file is accessible and configured
+            #    (e.g., via GOOGLE_APPLICATION_CREDENTIALS env var or Frappe settings).
             service = build('drive', 'v3') # , credentials=your_credentials
 
-            # For demonstration, let's assume the file content is available from a temporary path
-            # In a real Frappe scenario, you'd get the file content from frappe.get_file or similar
-            # For now, we'll just mock the file upload.
-            # file_content_path = "/path/to/temp/uploaded_file.ext"
-            # file_mimetype = "application/octet-stream"
+            # 2. Prepare file metadata and content
+            #    Example: file_metadata = {'name': self.file_name, 'parents': ['YOUR_DRIVE_FOLDER_ID']}
+            #    Example: media = MediaFileUpload('path/to/local/file', mimetype=self.file_type)
 
-            # Mock file upload data
-            file_metadata = {'name': self.file_name, 'parents': [frappe.get_single("Ferum Settings").google_drive_folder_id]} # Assuming a setting for folder ID
-            # media = MediaFileUpload(file_content_path, mimetype=file_mimetype)
+            # 3. Execute the upload
+            #    file = service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
 
-            # Mock file object returned from Drive API
-            mock_file_id = "mock_drive_file_id_" + frappe.generate_hash(length=10)
-            mock_web_view_link = f"https://drive.google.com/file/d/{mock_file_id}/view"
+            # 4. Store the Google Drive file ID and webViewLink
+            #    self.file_url = file.get('webViewLink')
+            #    self.google_drive_file_id = file.get('id') # Consider adding this field to DocType
 
-            # In real implementation:
-            # file = service.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
-            # self.file_url = file.get('webViewLink')
-            # self.file_id = file.get('id') # Store Drive File ID for easy deletion
-
-            self.file_url = mock_web_view_link
-            self.file_type = self.file_type or "application/octet-stream" # Use provided type or default
-            frappe.msgprint(_(f"File {self.file_name} uploaded to Google Drive (mocked)."))
+            # Placeholder for successful upload
+            self.file_url = f"https://drive.google.com/mock_file_id/{frappe.generate_hash(length=10)}/view"
+            self.file_type = self.file_type or "application/octet-stream"
+            frappe.msgprint(_(f"File {self.file_name} uploaded to Google Drive (placeholder)."))
 
         except Exception as e:
             frappe.log_error(f"Google Drive upload failed for {self.file_name}: {e}", "Google Drive Integration Error")
             frappe.throw(_(f"Failed to upload to Google Drive: {e}"))
+        # --- END Google Drive Upload Implementation --- #
 
     def on_trash(self):
         if not GOOGLE_DRIVE_INTEGRATION_ENABLED:
@@ -58,22 +59,26 @@ class CustomAttachment(Document):
         if not self.file_url: # Only attempt deletion if a file_url exists
             return
 
+        # --- START Google Drive Deletion Implementation --- #
+        # This section needs to be replaced with actual Google Drive API calls.
+        # You will need the Google Drive File ID to delete the file.
+        # It's best to store the Google Drive File ID directly in the DocType.
+
         try:
-            # Authenticate with Google Drive API
+            # 1. Authenticate with Google Drive API
             service = build('drive', 'v3') # , credentials=your_credentials
 
-            # Extract file ID from file_url or use a stored file_id field
-            # For simplicity, let's assume file_url contains the ID in a predictable way
-            # In a real scenario, you would store the file_id directly in the DocType.
+            # 2. Extract file ID (if not stored directly) or use self.google_drive_file_id
             file_id = self.file_url.split('/')[-2] if 'file/d/' in self.file_url else None
 
             if file_id:
-                # In real implementation:
+                # 3. Execute the deletion
                 # service.files().delete(fileId=file_id).execute()
-                frappe.msgprint(_(f"File with ID {file_id} deleted from Google Drive (mocked)."))
+                frappe.msgprint(_(f"File with ID {file_id} deleted from Google Drive (placeholder)."))
             else:
                 frappe.msgprint(_(f"Could not extract Google Drive File ID from URL: {self.file_url}"))
 
         except Exception as e:
             frappe.log_error(f"Google Drive deletion failed for {self.file_name}: {e}", "Google Drive Integration Error")
             frappe.throw(_(f"Failed to delete from Google Drive: {e}"))
+        # --- END Google Drive Deletion Implementation --- #

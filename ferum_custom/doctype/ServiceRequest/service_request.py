@@ -1,6 +1,9 @@
 import frappe
 from frappe.model.document import Document
 from frappe import _
+from frappe.utils import nowdate, add_hours, add_days, getdate
+import requests
+import json
 
 class ServiceRequest(Document):
     def validate(self):
@@ -43,15 +46,32 @@ class ServiceRequest(Document):
         # This would typically involve business hours, holidays, etc.
         # For now, a simple calculation based on type and priority
         if self.type == "Emergency" and self.priority == "High":
-            self.sla_deadline = frappe.utils.add_hours(self.creation, 4) # 4 hours for high emergency
+            self.sla_deadline = add_hours(self.creation, 4) # 4 hours for high emergency
         elif self.type == "Emergency" and self.priority == "Medium":
-            self.sla_deadline = frappe.utils.add_hours(self.creation, 8) # 8 hours for medium emergency
+            self.sla_deadline = add_hours(self.creation, 8) # 8 hours for medium emergency
         elif self.type == "Routine" and self.priority == "High":
-            self.sla_deadline = frappe.utils.add_days(self.creation, 1) # 1 day for routine high
+            self.sla_deadline = add_days(self.creation, 1) # 1 day for routine high
         else:
-            self.sla_deadline = frappe.utils.add_days(self.creation, 3) # 3 days for others
+            self.sla_deadline = add_days(self.creation, 3) # 3 days for others
 
     def check_sla_breach(self):
-        if self.status not in ["Completed", "Closed"] and self.sla_deadline and frappe.utils.now() > self.sla_deadline:
-            frappe.msgprint(_(f"SLA for Service Request {self.name} has been breached!"))
-            # In a real system, this would trigger an escalation or notification
+        if self.status not in ["Completed", "Closed"] and self.sla_deadline and getdate(nowdate()) > getdate(self.sla_deadline):
+            message = f"SLA for Service Request {self.name} has been breached! Title: {self.title}. Priority: {self.priority}. Due: {self.sla_deadline}"
+            frappe.msgprint(_(message))
+            frappe.log_error(message, "SLA Breach Alert")
+
+            # Send Telegram notification (assuming FastAPI backend is running and accessible)
+            # In a real system, you would get the chat_id from user settings or a config DocType
+            telegram_chat_id = 123456789 # REPLACE WITH ACTUAL CHAT ID OF ADMIN/DEPT HEAD
+            fastapi_backend_url = "http://localhost:8000/api/v1/send_telegram_notification" # Adjust if FastAPI is on different host/port
+            
+            try:
+                # This requires a valid JWT token from the FastAPI backend for authentication
+                # In a real Frappe app, you'd have a secure way to get/store this token
+                headers = {"Authorization": "Bearer YOUR_FASTAPI_JWT_TOKEN"} # REPLACE WITH ACTUAL JWT TOKEN
+                payload = {"chat_id": telegram_chat_id, "text": message}
+                response = requests.post(fastapi_backend_url, headers=headers, json=payload)
+                response.raise_for_status() # Raise HTTPError for bad responses (4xx or 5xx)
+                frappe.log_by_page(f"SLA breach notification sent to Telegram for {self.name}", "SLA Notification")
+            except requests.exceptions.RequestException as e:
+                frappe.log_error(f"Failed to send SLA breach Telegram notification for {self.name}: {e}", "SLA Notification Error")

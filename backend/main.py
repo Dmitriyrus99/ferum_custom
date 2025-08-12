@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from .routers import projects, requests, reports, invoices, metrics, auth
+from .routers import projects, requests, reports, invoices, metrics, auth, notifications
 from .config import settings
 import sentry_sdk
 from fastapi_limiter import FastAPILimiter
@@ -24,6 +24,7 @@ app.include_router(reports.router, prefix="/api/v1")
 app.include_router(invoices.router, prefix="/api/v1")
 app.include_router(metrics.router, prefix="/api/v1")
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
 
 @app.get("/api/v1/health")
 async def health_check():

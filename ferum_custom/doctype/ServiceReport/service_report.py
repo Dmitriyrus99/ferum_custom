@@ -5,6 +5,7 @@ from frappe import _
 class ServiceReport(Document):
     def validate(self):
         self.calculate_total_amount()
+        self.validate_attachments()
 
     def on_submit(self):
         self.update_service_request_on_submit()
@@ -14,6 +15,11 @@ class ServiceReport(Document):
         for item in self.work_items:
             item.total = item.hours * item.rate
             self.total_amount += item.total
+
+    def validate_attachments(self):
+        for item in self.documents:
+            if not item.custom_attachment:
+                frappe.throw(_("Attachment is required for all Document Items."))
 
     def update_service_request_on_submit(self):
         if self.service_request:

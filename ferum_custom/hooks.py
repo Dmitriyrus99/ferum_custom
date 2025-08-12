@@ -135,36 +135,22 @@ app_license = "mit"
 
 # Document Events
 # ---------------
-# Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"ServiceRequest": {
+		"after_insert": "ferum_custom.notifications.notify_new_service_request",
+		"on_update": "ferum_custom.notifications.notify_service_request_status_change"
+	}
+}
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"ferum_custom.tasks.all"
-# 	],
-# 	"daily": [
-# 		"ferum_custom.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"ferum_custom.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"ferum_custom.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"ferum_custom.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"daily": [
+		"ferum_custom.doctype.MaintenanceSchedule.maintenance_schedule.generate_service_requests_from_schedule"
+	],
+}
 
 # Testing
 # -------
