@@ -2,7 +2,7 @@ Deployment and CI/CD
 
 The deployment architecture for Ferum Customizations is containerized and automated to ensure reliable releases and easy maintenance across development, staging, and production environments. This section describes the environment setup, continuous integration and delivery process, database migrations, and testing strategy.
 
-Environment Setup (Docker Compose): The application is deployed using Docker Compose, which defines all the necessary services:
+Environment Setup (Docker Compose): The application is deployed using Docker Compose, which defines all the necessary services. This includes a special `setup` service that automates the installation and migration of the ERPNext application and custom app. For detailed `docker-compose.yml` configuration and setup steps, refer to the [RUN.md](../RUN.md) guide.
 
 A Frappe/ERPNext service (Docker container) that runs ERPNext v15 and the custom app. This container includes gunicorn workers for the ERPNext web server and possibly background workers (celery or RQ for scheduled tasks) as part of the bench setup.
 
