@@ -179,16 +179,17 @@ Invoice uploaded: notify Admin (bot/email).
 
 And so on.
 
-Business Process Diagrams: (Placeholders if actual images not embedded above.)
+Business Process Diagrams:
 
-Figure 1: Project & Contract Management BPMN.
+- [Figure 1: Project & Contract Management BPMN](images/project_contract_management_process.svg)
+- [Figure 2: Service Request Management BPMN](images/service_request_management_process.svg)
+- [Figure 3: Work Reporting BPMN](images/work_reporting_process.svg)
+- [Figure 4: Invoicing & Payments BPMN](images/invoicing_payments_process.svg)
+- [Figure 5: HR & Payroll BPMN](images/hr_payroll_management_process.svg)
+- [Figure 6: Document & Attachment Management BPMN](images/document_attachment_management_process.svg)
+- [Figure 7: Monitoring, Analytics & Security BPMN](images/monitoring_analytics_security_process.svg)
 
-Figure 2: Service Request Management BPMN.
-
-- ...
-- etc through Figure 7.
-
-- These diagrams illustrate step-by-step flows and decision gateways for each process (for reference during training or onboarding).
+These diagrams illustrate step-by-step flows and decision gateways for each process (for reference during training or onboarding).
 
 Standard Operating Procedures: Some processes might have slight manual steps beyond the system:
 

@@ -1,9 +1,10 @@
 # Work Reporting (Service Reports for Completed Work)
 
-### Figure 3
+### Figure 3: Work Reporting BPMN
 
-- BPMN diagram for Work Reporting (Service Report) process.
-- After a service request’s work is finished on-site, the work must be documented and approved.
+![Work Reporting BPMN](../images/work_reporting_process.svg)
+
+After a service request’s work is finished on-site, the work must be documented and approved.
 - This process results in a Service Report (also known as an “Act of Completed Work”) which is essentially a detailed report of the services performed.
 - The process is triggered when a Service Request is marked as completed (work done) – at this point, the assigned Engineer or the Project Manager will create a ServiceReport in the system to capture the results.
 

@@ -1,9 +1,10 @@
 # HR & Payroll Management (Employee Time and Payroll Accounting)
 
-### Figure 5
+### Figure 5: HR & Payroll BPMN
 
-- BPMN diagram for HR and Payroll process.
-- This process deals with tracking employee work and calculating salaries, handled largely within the ERPNext HR module but with customizations for the company’s needs.
+![HR & Payroll BPMN](../images/hr_payroll_management_process.svg)
+
+This process deals with tracking employee work and calculating salaries, handled largely within the ERPNext HR module but with customizations for the company’s needs.
 - The company has a relatively small staff (under 20 employees), so simplicity and accuracy are key.
 
 ### Time & Attendance Tracking

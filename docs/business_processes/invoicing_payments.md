@@ -1,9 +1,10 @@
 # Invoicing & Payments (Client Billing and Contractor Payments)
 
-### Figure 4
+### Figure 4: Invoicing & Payments BPMN
 
-- BPMN diagram for Invoicing and Payments processes (client invoicing on left, subcontractor payment on right).
-- This module automates financial document handling: issuing invoices to clients and processing incoming bills from subcontractors.
+![Invoicing & Payments BPMN](../images/invoicing_payments_process.svg)
+
+This module automates financial document handling: issuing invoices to clients and processing incoming bills from subcontractors.
 - It involves both ERPNext records and external integrations (Google Sheets for tracking, and notifications for finance oversight).
 
 ### Client Invoicing
