@@ -1,11 +1,10 @@
 # Entity-Relationship Model
 
-- The core data model revolves around a set of custom DocTypes (data entities) in ERPNext that capture the domain concepts, along with relationships between them.
-- The following diagram shows the main entities and their relationships:
+The core data model revolves around a set of custom DocTypes (data entities) in ERPNext that capture the domain concepts, along with relationships between them. The following diagram shows the main entities and their relationships:
 
-- Entity Relationship Diagram (ERD) of Ferum Customizations, illustrating key DocTypes and their relationships.
-- Each box represents a DocType (or key model), with primary fields, and lines indicate relationships (arrows point from parent to child or one-to-many link).
-- Below is a description of each entity:
+![Entity Relationship Diagram](images/entity_relationship_diagram.svg)
+
+Each box represents a DocType (or key model), with primary fields, and lines indicate relationships (arrows point from parent to child or one-to-many link). Below is a description of each entity:
 
 ### Customer
 
