@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+frappe-client # For interacting with ERPNext API
+python-dotenv # For loading environment variables
+sentry-sdk # For error tracking
+httpx # For testing FastAPI applications
