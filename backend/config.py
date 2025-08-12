@@ -12,5 +12,6 @@ class Settings:
     ERP_API_SECRET: str = os.getenv("ERP_API_SECRET")
     TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN")
     SENTRY_DSN: str = os.getenv("SENTRY_DSN")
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 settings = Settings()

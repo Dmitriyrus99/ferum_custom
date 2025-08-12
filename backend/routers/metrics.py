@@ -1,13 +1,17 @@
 from fastapi import APIRouter
+from prometheus_client import generate_latest, Counter
 
 router = APIRouter()
 
+# Define a Counter metric
+REQUESTS_TOTAL = Counter(
+    'http_requests_total', 'Total HTTP requests', ['method', 'endpoint']
+)
+
 @router.get("/metrics")
 async def get_metrics():
-    # In a real application, you would expose actual application metrics here
-    # using a library like prometheus_client.
-    # Example:
-    # from prometheus_client import generate_latest, Counter
-    # c = Counter('my_requests_total', 'HTTP requests total', ['method', 'endpoint'])
-    # c.labels(method='get', endpoint='/metrics').inc()
-    return {"message": "Prometheus metrics endpoint placeholder", "status": "ok"}
+    # Increment the counter for this specific endpoint
+    REQUESTS_TOTAL.labels(method='GET', endpoint='/metrics').inc()
+    
+    # Return Prometheus metrics in plain text format
+    return generate_latest().decode("utf-8")

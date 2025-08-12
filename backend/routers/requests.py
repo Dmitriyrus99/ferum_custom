@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from frappe_client import FrappeClient
 
 from ..config import settings
@@ -41,5 +41,34 @@ async def update_request_status(request_name: str, status_data: dict, current_us
         # This endpoint would enforce workflow rules defined in ERPNext
         updated_request = frappe_client.set_value("ServiceRequest", request_name, {"status": status_data.get("status")})
         return {"message": "Service Request status updated successfully", "request": updated_request}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/requests/{request_name}/attachments")
+async def upload_request_attachment(request_name: str, file: UploadFile = File(...), current_user: str = Depends(has_role(["Project Manager", "Administrator", "Engineer", "Office Manager"]))):
+    try:
+        # Create a CustomAttachment DocType in ERPNext
+        # The actual file content will be handled by CustomAttachment's before_insert hook (Google Drive integration)
+        attachment_data = {
+            "file_name": file.filename,
+            "file_type": file.content_type,
+            "uploaded_by": current_user,
+            "linked_doctype": "ServiceRequest",
+            "linked_docname": request_name
+        }
+        new_attachment = frappe_client.insert("CustomAttachment", attachment_data)
+
+        # Link the CustomAttachment to the ServiceRequest via RequestPhotoAttachmentItem
+        # First, get the ServiceRequest to update its child table
+        service_request_doc = frappe_client.get_doc("ServiceRequest", request_name)
+        
+        # Add the new attachment to the 'photos' child table
+        if not service_request_doc.photos:
+            service_request_doc.photos = []
+        service_request_doc.photos.append({"photo": new_attachment.name}) # Assuming 'photo' field in child table links to CustomAttachment name
+        
+        updated_service_request = frappe_client.update("ServiceRequest", service_request_doc.name, {"photos": service_request_doc.photos})
+
+        return {"message": "Attachment uploaded and linked successfully", "attachment": new_attachment.name}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

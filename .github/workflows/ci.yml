@@ -1,4 +1,3 @@
-
 name: CI
 
 on:
@@ -117,5 +116,22 @@ jobs:
     needs: tests
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     steps:
-      - name: Placeholder Deployment Step
-        run: echo "Deployment logic goes here. This step needs to be configured manually."
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd /path/to/your/project/on/server # Change to your project directory on the server
+            git pull origin develop # Pull the latest changes
+            docker-compose down # Stop existing containers
+            docker-compose pull # Pull latest images (if using image registry)
+            docker-compose up -d --build # Rebuild and start containers
+            # Optional: Run migrations on the deployed ERPNext instance
+            # docker exec -it <erpnext_container_name> bench --site <your_site_name> migrate
+            # Optional: Restart ERPNext bench if needed
+            # docker exec -it <erpnext_container_name> bench restart

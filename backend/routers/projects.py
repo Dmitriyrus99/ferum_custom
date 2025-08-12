@@ -27,3 +27,19 @@ async def get_project(project_name: str, current_user: str = Depends(has_role(["
         return {"project": project}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/projects")
+async def create_project(project_data: dict, current_user: str = Depends(has_role(["Project Manager", "Administrator"]))):
+    try:
+        new_project = frappe_client.insert("ServiceProject", project_data)
+        return {"message": "Project created successfully", "project": new_project}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/projects/{project_name}")
+async def update_project(project_name: str, project_data: dict, current_user: str = Depends(has_role(["Project Manager", "Administrator"]))):
+    try:
+        updated_project = frappe_client.update("ServiceProject", project_name, project_data)
+        return {"message": "Project updated successfully", "project": updated_project}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
