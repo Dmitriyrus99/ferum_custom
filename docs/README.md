@@ -1,6 +1,6 @@
 # Ferum Customizations - Technical Specification
 
-This directory contains the detailed technical specification for Ferum Customizations, broken down into smaller, more manageable Markdown files for easier navigation and study.
+- This directory contains the detailed technical specification for Ferum Customizations, broken down into smaller, more manageable Markdown files for easier navigation and study.
 
 ## Table of Contents
 
