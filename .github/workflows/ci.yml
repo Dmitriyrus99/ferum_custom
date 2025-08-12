@@ -93,6 +93,7 @@ jobs:
           bench setup requirements --dev
           bench new-site --db-root-password root --admin-password admin test_site
           bench --site test_site install-app ferum_custom
+          bench --site test_site migrate
           bench build
         env:
           CI: 'Yes'
@@ -110,3 +111,11 @@ jobs:
         run: |
           pip install pip-audit
           pip-audit
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: tests
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    steps:
+      - name: Placeholder Deployment Step
+        run: echo "Deployment logic goes here. This step needs to be configured manually."
