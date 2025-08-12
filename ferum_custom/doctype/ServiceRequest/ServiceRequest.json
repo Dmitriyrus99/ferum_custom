@@ -1,0 +1,88 @@
+{
+  "name": "ServiceRequest",
+  "doctype": "DocType",
+  "autoname": "SR-.####",
+  "fields": [
+    {
+      "fieldname": "title",
+      "fieldtype": "Data",
+      "label": "Title",
+      "reqd": 1
+    },
+    {
+      "fieldname": "description",
+      "fieldtype": "Text",
+      "label": "Description"
+    },
+    {
+      "fieldname": "type",
+      "fieldtype": "Select",
+      "label": "Type",
+      "options": "Routine\nEmergency",
+      "default": "Routine"
+    },
+    {
+      "fieldname": "priority",
+      "fieldtype": "Select",
+      "label": "Priority",
+      "options": "Low\nMedium\nHigh",
+      "default": "Medium"
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Open\nIn Progress\nCompleted\nClosed\nCancelled",
+      "default": "Open"
+    },
+    {
+      "fieldname": "service_object",
+      "fieldtype": "Link",
+      "label": "Service Object",
+      "options": "ServiceObject",
+      "reqd": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "Project",
+      "options": "ServiceProject"
+    },
+    {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "label": "Customer",
+      "options": "Customer"
+    },
+    {
+      "fieldname": "assigned_to",
+      "fieldtype": "Link",
+      "label": "Assigned To",
+      "options": "User"
+    },
+    {
+      "fieldname": "linked_report",
+      "fieldtype": "Link",
+      "label": "Linked Service Report",
+      "options": "ServiceReport"
+    },
+    {
+      "fieldname": "photos",
+      "fieldtype": "Table",
+      "label": "Photos",
+      "options": "RequestPhotoAttachmentItem"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "submit": 0,
+      "cancel": 0,
+      "amend": 0
+    }
+  ]
+}

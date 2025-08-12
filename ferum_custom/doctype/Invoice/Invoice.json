@@ -1,0 +1,62 @@
+{
+  "name": "Invoice",
+  "doctype": "DocType",
+  "autoname": "INV-.####",
+  "is_submittable": 1,
+  "fields": [
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "label": "Service Project",
+      "options": "ServiceProject"
+    },
+    {
+      "fieldname": "period",
+      "fieldtype": "Data",
+      "label": "Period"
+    },
+    {
+      "fieldname": "amount",
+      "fieldtype": "Currency",
+      "label": "Amount",
+      "reqd": 1
+    },
+    {
+      "fieldname": "counterparty_name",
+      "fieldtype": "Data",
+      "label": "Counterparty Name",
+      "reqd": 1
+    },
+    {
+      "fieldname": "counterparty_type",
+      "fieldtype": "Select",
+      "label": "Counterparty Type",
+      "options": "Customer\nSubcontractor",
+      "reqd": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Draft\nSent\nPaid\nOverdue\nCancelled",
+      "default": "Draft"
+    },
+    {
+      "fieldname": "due_date",
+      "fieldtype": "Date",
+      "label": "Due Date"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1,
+      "submit": 1,
+      "cancel": 1,
+      "amend": 1
+    }
+  ]
+}
