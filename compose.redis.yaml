@@ -1,0 +1,12 @@
+version: "3.7"
+
+services:
+  redis-cache:
+    image: docker.io/redis:alpine
+    platform: linux/amd64
+    command: redis-server --appendonly no --requirepass ${REDIS_CACHE_PASSWORD}
+
+  redis-queue:
+    image: docker.io/redis:alpine
+    platform: linux/amd64
+    command: redis-server --appendonly no --requirepass ${REDIS_QUEUE_PASSWORD}

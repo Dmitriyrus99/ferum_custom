@@ -1,0 +1,23 @@
+version: "3.7"
+
+services:
+  caddy:
+    image: caddy:2.7.5-alpine
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    environment:
+      - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
+      - SITES=${SITES}
+    depends_on:
+      - backend
+
+volumes:
+  caddy-data:
+  caddy-config:

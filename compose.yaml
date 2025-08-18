@@ -1,0 +1,57 @@
+version: "3.7"
+
+services:
+  backend:
+    image: ${FRAPPE_DOCKER_IMAGE:-frappe/erpnext}:${FRAPPE_VERSION:-latest}
+    platform: linux/amd64
+    command: sleep infinity
+    environment:
+      - SHELL=/bin/bash
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - REDIS_CACHE=${REDIS_CACHE}
+      - REDIS_QUEUE=${REDIS_QUEUE}
+      - REDIS_SOCKETIO=${REDIS_SOCKETIO}
+      - FRAPPE_SITE_NAME=${SITES}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - sites:/home/frappe/frappe-bench/sites
+      - logs:/home/frappe/frappe-bench/logs
+      # Mount custom app for development if needed
+      # - ./ferum_custom:/home/frappe/frappe-bench/apps/ferum_custom
+    working_dir: /home/frappe/frappe-bench
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis-cache
+      - redis-queue
+
+  db:
+    image: ${DB_IMAGE:-mariadb:10.6}
+    platform: linux/amd64
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db-data:/var/lib/mysql
+
+  redis-cache:
+    image: redis:alpine
+    platform: linux/amd64
+    command: redis-server --appendonly no --requirepass ${REDIS_CACHE_PASSWORD}
+
+  redis-queue:
+    image: redis:alpine
+    platform: linux/amd64
+    command: redis-server --appendonly no --requirepass ${REDIS_QUEUE_PASSWORD}
+
+volumes:
+  sites:
+  logs:
+  db-data:

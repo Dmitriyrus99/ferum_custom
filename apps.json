@@ -1,0 +1,4 @@
+[
+  {"url": "https://github.com/frappe/erpnext", "branch": "version-15"},
+  {"url": "https://github.com/your-org/ferum_customs.git", "branch": "main"}
+]

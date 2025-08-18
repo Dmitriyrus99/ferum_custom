@@ -1,0 +1,4 @@
+${SITES} {
+  tls ${LETSENCRYPT_EMAIL}
+  reverse_proxy backend:8000
+}
