@@ -12,10 +12,24 @@ except ImportError:
 
 class Invoice(Document):
     def validate(self):
+        self.set_customer_and_project()
         self.validate_status_transitions()
 
     def on_submit(self):
         self.sync_to_google_sheets()
+
+    def set_customer_and_project(self):
+        # Prefer new model (Contract -> standard Project) and keep legacy project link read-only.
+        if getattr(self, "contract", None):
+            contract = frappe.get_doc("Contract", self.contract)
+            if contract.party_type and contract.party_type != "Customer":
+                frappe.throw(_("Contract party_type must be Customer."))
+
+            if hasattr(self, "counterparty_type") and self.counterparty_type == "Customer":
+                self.counterparty_name = contract.party_name
+
+            if frappe.db.has_column("Project", "contract"):
+                self.erpnext_project = frappe.db.get_value("Project", {"contract": contract.name}, "name")
 
     def validate_status_transitions(self):
         old_status = frappe.db.get_value("Invoice", self.name, "status") if not self.is_new() else None
@@ -60,7 +74,8 @@ class Invoice(Document):
             # Example row data. Adjust columns as per your Google Sheet structure.
             row_data = [
                 self.name, # Invoice ID
-                self.project, # Linked Project
+                getattr(self, "contract", None) or "", # Linked Contract
+                getattr(self, "erpnext_project", None) or self.project or "", # Linked Project (new/legacy)
                 self.amount, # Invoice Amount
                 self.counterparty_name, # Client/Subcontractor Name
                 self.counterparty_type, # Type (Customer/Subcontractor)
@@ -75,7 +90,7 @@ class Invoice(Document):
             cell = worksheet.find(self.name) # Search by Invoice ID
             if cell:
                 # Update existing row
-                worksheet.update(f'A{cell.row}:I{cell.row}', [row_data]) # Adjust range (A:I) as per your columns
+                worksheet.update(f'A{cell.row}:J{cell.row}', [row_data]) # Adjust range (A:J) as per your columns
                 frappe.msgprint(_(f"Invoice {self.name} updated in Google Sheets."))
             else:
                 # Append new row

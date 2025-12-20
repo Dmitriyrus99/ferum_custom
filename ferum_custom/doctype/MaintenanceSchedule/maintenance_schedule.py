@@ -4,23 +4,29 @@ from frappe.utils import nowdate, add_days, add_months, add_years
 @frappe.whitelist()
 def generate_service_requests_from_schedule():
     today = nowdate()
-    maintenance_schedules = frappe.get_list("MaintenanceSchedule", filters={
-        "next_due_date": ["<=", today],
-        "docstatus": 0 # Draft or active schedules
-    }, fields=["*"])
+    schedule_names = frappe.get_all(
+        "MaintenanceSchedule",
+        filters={"next_due_date": ["<=", today], "docstatus": 0},
+        pluck="name",
+    )
 
-    for schedule in maintenance_schedules:
+    for schedule_name in schedule_names:
+        schedule = frappe.get_doc("MaintenanceSchedule", schedule_name)
         if schedule.end_date and schedule.end_date < today:
             # Schedule has ended, skip it
             continue
 
-        for item in schedule.get("items"):
+        for item in schedule.get("items") or []:
             try:
                 service_request = frappe.new_doc("ServiceRequest")
-                service_request.customer = schedule.customer
-                service_request.service_project = schedule.service_project
                 service_request.service_object = item.service_object
-                service_request.subject = f"Scheduled Maintenance for {item.service_object} ({schedule.schedule_name})"
+                if getattr(schedule, "contract", None):
+                    service_request.contract = schedule.contract
+                    service_request.erpnext_project = getattr(schedule, "erpnext_project", None)
+                else:
+                    service_request.customer = schedule.customer
+
+                service_request.title = f"Scheduled Maintenance for {item.service_object} ({schedule.schedule_name})"
                 service_request.description = item.description or f"Routine maintenance as per schedule {schedule.schedule_name}"
                 service_request.status = "Open"
                 service_request.save(ignore_permissions=True)

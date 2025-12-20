@@ -30,8 +30,10 @@
     {
       "fieldname": "project",
       "fieldtype": "Link",
-      "label": "Project",
-      "options": "ServiceProject"
+      "label": "Service Project (Legacy)",
+      "options": "ServiceProject",
+      "hidden": 1,
+      "read_only": 1
     }
   ],
   "permissions": [

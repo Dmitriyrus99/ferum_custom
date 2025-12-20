@@ -15,10 +15,23 @@ class ServiceRequest(Document):
         self.check_sla_breach()
 
     def set_customer_and_project(self):
+        if getattr(self, "contract", None):
+            contract = frappe.get_doc("Contract", self.contract)
+            if contract.party_type and contract.party_type != "Customer":
+                frappe.throw(_("Contract party_type must be Customer."))
+            if contract.party_name:
+                self.customer = contract.party_name
+
+            if frappe.db.has_column("Project", "contract"):
+                self.erpnext_project = frappe.db.get_value("Project", {"contract": contract.name}, "name")
+            return
+
         if self.service_object:
             service_object_doc = frappe.get_doc("ServiceObject", self.service_object)
             self.customer = service_object_doc.customer
-            self.project = service_object_doc.project
+            # Legacy linkage (deprecated)
+            if hasattr(self, "project"):
+                self.project = getattr(service_object_doc, "project", None)
 
     def validate_workflow_transitions(self):
         # Implement strict workflow transitions based on Technical_Specification_full.md
@@ -81,7 +94,7 @@ class ServiceRequest(Document):
             # TODO: Determine recipient email addresses (e.g., from user roles, project managers, etc.)
             recipient_email = "admin@example.com" # REPLACE WITH ACTUAL RECIPIENT EMAIL
             subject = f"SLA Breach Alert: Service Request {self.name}"
-            body = f"Dear Team,
+            body = f"""Dear Team,
 
 The Service Level Agreement for Service Request {self.name} has been breached.
 
@@ -93,7 +106,7 @@ Due Date: {self.sla_deadline}
 Please take immediate action.
 
 Regards,
-System"
+System"""
             
             try:
                 frappe.sendmail(recipients=recipient_email, subject=subject, message=body)

@@ -4,5 +4,9 @@
 
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
+ferum_custom.patches.v15_7.add_contract_project_objects_acts_model
+ferum_custom.patches.v15_7.create_contract_objects_acts_doctypes
+ferum_custom.patches.v15_7.transition_legacy_service_doctypes_to_contract_project
+ferum_custom.patches.v15_7.hide_legacy_service_project_fields
 ferum_custom.patches.v15_7.fix_system_settings_language
 ferum_custom.patches.v15_7.fix_settings_invoice_notification_roles

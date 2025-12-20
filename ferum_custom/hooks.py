@@ -117,13 +117,17 @@ app_license = "mit"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
-# has_permission = {
-# 	"Event": "frappe.desk.doctype.event.event.has_permission",
-# }
+permission_query_conditions = {
+	"Contract": "ferum_custom.security.portal_permissions.contract_permission_query_conditions",
+}
+
+has_permission = {
+	"Sales Invoice": "ferum_custom.security.portal_permissions.sales_invoice_has_permission",
+	"ServiceAct": "ferum_custom.security.portal_permissions.service_act_has_permission",
+	"Invoice": "ferum_custom.security.portal_permissions.invoice_has_permission",
+	"ServiceProject": "ferum_custom.security.service_project_permissions.service_project_has_permission",
+	"Service Project": "ferum_custom.security.service_project_permissions.service_project_has_permission",
+}
 
 # DocType Class
 # ---------------
@@ -137,6 +141,24 @@ app_license = "mit"
 # ---------------
 
 doc_events = {
+	"Contract": {
+		"validate": "ferum_custom.services.contract_project_sync.validate_contract_party_is_customer",
+		"on_update": "ferum_custom.services.contract_project_sync.ensure_project_for_contract",
+	},
+	"Project": {
+		"validate": [
+			"ferum_custom.services.contract_project_sync.validate_project_has_contract",
+			"ferum_custom.services.contract_project_sync.validate_project_unique_contract",
+		],
+	},
+	"Service Request": {
+		"after_insert": "ferum_custom.notifications.notify_new_service_request",
+		"on_update": "ferum_custom.notifications.notify_service_request_status_change"
+	},
+	"Service Report": {
+		"after_insert": "ferum_custom.notifications.notify_new_service_report",
+		"on_submit": "ferum_custom.notifications.notify_service_report_status_change"
+	},
 	"ServiceRequest": {
 		"after_insert": "ferum_custom.notifications.notify_new_service_request",
 		"on_update": "ferum_custom.notifications.notify_service_request_status_change"
@@ -156,7 +178,7 @@ doc_events = {
 
 scheduler_events = {
 	"daily": [
-		"ferum_custom.doctype.MaintenanceSchedule.maintenance_schedule.generate_service_requests_from_schedule"
+		"ferum_custom.services.service_schedule.generate_service_requests_from_schedule"
 	],
 }
 

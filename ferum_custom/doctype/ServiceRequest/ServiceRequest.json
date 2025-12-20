@@ -45,8 +45,23 @@
     {
       "fieldname": "project",
       "fieldtype": "Link",
+      "label": "Service Project (Legacy)",
+      "options": "ServiceProject",
+      "hidden": 1,
+      "read_only": 1
+    },
+    {
+      "fieldname": "contract",
+      "fieldtype": "Link",
+      "label": "Contract",
+      "options": "Contract"
+    },
+    {
+      "fieldname": "erpnext_project",
+      "fieldtype": "Link",
       "label": "Project",
-      "options": "ServiceProject"
+      "options": "Project",
+      "read_only": 1
     },
     {
       "fieldname": "customer",
