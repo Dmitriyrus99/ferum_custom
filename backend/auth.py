@@ -5,7 +5,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from frappe_client import FrappeClient # Import FrappeClient
+from frappeclient import FrappeClient  # Import FrappeClient
 
 from .config import settings
 

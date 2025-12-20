@@ -13,10 +13,18 @@ if settings.SENTRY_DSN:
 
 app = FastAPI()
 
-@app.on_startup
+app.middleware("http")(metrics.metrics_middleware)
+
+
+@app.on_event("startup")
 async def startup():
-    redis = Redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
-    await FastAPILimiter.init(redis)
+    # Allow the API to start even if Redis is unavailable (e.g. local dev / unit tests).
+    try:
+        redis = Redis.from_url(settings.REDIS_URL, encoding="utf-8", decode_responses=True)
+        await redis.ping()
+        await FastAPILimiter.init(redis)
+    except Exception:
+        return
 
 app.include_router(projects.router, prefix="/api/v1")
 app.include_router(requests.router, prefix="/api/v1")

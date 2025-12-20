@@ -23,10 +23,12 @@ class ServiceRequest(Document):
                 "ContractServiceObject",
                 filters={"service_object": self.service_object, "status": "Active"},
                 pluck="contract",
-                limit=2,
             )
-            if len(links) == 1:
-                self.contract = links[0]
+            self.contract = _pick_contract_for_service_object(
+                service_object=self.service_object,
+                contracts=links,
+                company=getattr(self, "company", None),
+            )
 
         if getattr(self, "contract", None):
             contract = frappe.get_doc("Contract", self.contract)
@@ -47,3 +49,43 @@ class ServiceRequest(Document):
                             frappe.bold(so_customer), frappe.bold(contract.party_name)
                         )
                     )
+
+
+def _pick_contract_for_service_object(*, service_object: str, contracts: list[str], company: str | None) -> str | None:
+    """Deterministic inference when Service Object can belong to multiple active contracts.
+
+    Priority:
+    1) If only one contract -> use it
+    2) If company is known -> choose contract with same company
+    3) Choose most recent by (start_date desc, modified desc, name desc)
+    If still ambiguous/empty -> return None (user must select).
+    """
+    contracts = [c for c in contracts if c]
+    if not contracts:
+        return None
+    if len(contracts) == 1:
+        return contracts[0]
+
+    if company and frappe.db.has_column("Contract", "company"):
+        same_company = frappe.get_all(
+            "Contract",
+            filters={"name": ["in", contracts], "company": company},
+            pluck="name",
+        )
+        if len(same_company) == 1:
+            return same_company[0]
+        if len(same_company) > 1:
+            contracts = same_company
+
+    # Prefer most recent contract
+    row = frappe.db.sql(
+        """
+        select name
+        from tabContract
+        where name in %(names)s
+        order by ifnull(start_date, '1900-01-01') desc, modified desc, name desc
+        limit 1
+        """,
+        {"names": tuple(contracts)},
+    )
+    return row[0][0] if row else None

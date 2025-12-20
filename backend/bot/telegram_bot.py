@@ -11,8 +11,8 @@ from ..config import settings
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
-# Initialize bot and dispatcher
-bot = Bot(token=settings.TELEGRAM_BOT_TOKEN)
+# Initialize bot lazily to allow imports/tests without TELEGRAM_BOT_TOKEN configured.
+bot = Bot(token=settings.TELEGRAM_BOT_TOKEN) if settings.TELEGRAM_BOT_TOKEN else None
 dp = Dispatcher()
 
 # Base URL for your FastAPI backend
@@ -87,6 +87,9 @@ async def my_requests_handler(message: types.Message) -> None:
 # Placeholder function to send notifications from backend
 async def send_telegram_notification(chat_id: int, text: str):
     try:
+        if bot is None:
+            logging.warning("Telegram bot token is not configured; skipping notification.")
+            return
         await bot.send_message(chat_id, text)
         logging.info(f"Notification sent to chat_id {chat_id}: {text}")
     except Exception as e:
@@ -94,6 +97,8 @@ async def send_telegram_notification(chat_id: int, text: str):
 
 async def main() -> None:
     """Entry point for the bot"""
+    if bot is None:
+        raise RuntimeError("TELEGRAM_BOT_TOKEN is not configured.")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":

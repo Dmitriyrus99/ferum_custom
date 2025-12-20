@@ -58,7 +58,13 @@ def ensure_project_for_contract(contract: Document, method: str | None = None) -
 
     project = frappe.new_doc("Project")
     project.project_name = _get_project_name_for_contract(contract)
-    project.project_type = "External"
+    if hasattr(project, "project_type"):
+        if frappe.db.exists("Project Type", "External"):
+            project.project_type = "External"
+        else:
+            fallback = frappe.db.get_value("Project Type", {}, "name")
+            if fallback:
+                project.project_type = fallback
 
     if hasattr(project, "contract"):
         project.contract = contract.name

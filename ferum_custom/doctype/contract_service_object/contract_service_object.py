@@ -39,7 +39,8 @@ class ContractServiceObject(Document):
 
     def _validate_customer_match(self) -> None:
         party_name = frappe.db.get_value("Contract", self.contract, "party_name")
-        so_customer = frappe.db.get_value("ServiceObject", self.service_object, "customer")
+        # Live system DocType is "Service Object" (spaced). The non-spaced variant is legacy/unreferenced.
+        so_customer = frappe.db.get_value("Service Object", self.service_object, "customer")
         if party_name and so_customer and party_name != so_customer:
             frappe.throw(
                 _("Service Object customer {0} must match Contract customer {1}.").format(

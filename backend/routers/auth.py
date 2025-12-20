@@ -3,7 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from frappe_client import FrappeClient
+from frappeclient import FrappeClient
 from passlib.context import CryptContext
 
 from ..auth import create_access_token, get_current_user # Keep create_access_token and get_current_user from auth.py

@@ -45,9 +45,13 @@ class ActSchedule(Document):
         if not (1 <= int(deadline_day) <= 31):
             frappe.throw(_("Acts Deadline Day must be between 1 and 31."))
 
+        # Acts for a period ending in a given month are typically submitted in the following month
+        # (e.g. period_to=2025-11-30, deadline_day=5 => planned_submit_date=2025-12-05).
         year = self.period_to.year
-        month = self.period_to.month
+        month = self.period_to.month + 1
+        if month == 13:
+            month = 1
+            year += 1
         last_day = calendar.monthrange(year, month)[1]
         day = min(int(deadline_day), last_day)
         self.planned_submit_date = date(year, month, day)
-

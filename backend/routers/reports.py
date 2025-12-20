@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from frappe_client import FrappeClient
+from frappeclient import FrappeClient
 
 from ..config import settings
 from ..auth import get_current_user, has_role
