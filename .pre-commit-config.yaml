@@ -1,4 +1,4 @@
-exclude: 'node_modules|.git'
+exclude: 'node_modules|.git|.fastmcp-venv'
 default_stages: [pre-commit]
 fail_fast: false
 
@@ -8,7 +8,7 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        files: "ferum_custom.*"
+        files: "^backend/.*\\.py$"
         exclude: ".*json$|.*txt$|.*csv|.*md|.*svg"
       - id: check-merge-conflict
       - id: check-ast
@@ -23,12 +23,15 @@ repos:
       - id: ruff
         name: "Run ruff import sorter"
         args: ["--select=I", "--fix"]
+        files: "^backend/.*\\.py$"
 
       - id: ruff
         name: "Run ruff linter"
+        files: "^backend/.*\\.py$"
 
       - id: ruff-format
         name: "Run ruff formatter"
+        files: "^backend/.*\\.py$"
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.7.1
@@ -67,13 +70,17 @@ repos:
     rev: v1.10.0
     hooks:
       - id: mypy
-        args: [--ignore-missing-imports, --show-error-codes]
+        args: [--ignore-missing-imports, --show-error-codes, --explicit-package-bases, backend]
+        files: ^backend/
+        pass_filenames: false
+        additional_dependencies:
+          - types-redis
 
   - repo: local
     hooks:
       - id: pytest
         name: pytest
-        entry: pytest
+        entry: env PYTHONPATH=. pytest
         language: system
         types: [python]
         pass_filenames: false
