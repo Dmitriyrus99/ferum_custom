@@ -1,6 +1,7 @@
 import frappe
-from frappe.model.document import Document
 from frappe import _
+from frappe.model.document import Document
+
 
 class ServiceProject(Document):
     def validate(self):
@@ -18,5 +19,9 @@ class ServiceProject(Document):
         seen_objects = set()
         for item in self.objects:
             if item.service_object in seen_objects:
-                frappe.throw(_(f"Service Object {item.service_object} is duplicated in this project."))
+                frappe.throw(
+                    _(
+                        f"Service Object {item.service_object} is duplicated in this project."
+                    )
+                )
             seen_objects.add(item.service_object)

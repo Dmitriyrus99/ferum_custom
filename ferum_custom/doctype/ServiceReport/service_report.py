@@ -1,6 +1,7 @@
 import frappe
-from frappe.model.document import Document
 from frappe import _
+from frappe.model.document import Document
+
 
 class ServiceReport(Document):
     def validate(self):
@@ -23,7 +24,11 @@ class ServiceReport(Document):
                 frappe.throw(_("Attachment is required for all Document Items."))
 
     def validate_workflow_transitions(self):
-        old_status = frappe.db.get_value("ServiceReport", self.name, "status") if not self.is_new() else None
+        old_status = (
+            frappe.db.get_value("ServiceReport", self.name, "status")
+            if not self.is_new()
+            else None
+        )
 
         if old_status == "Draft" and self.status == "Submitted":
             # Draft to Submitted is allowed
@@ -40,9 +45,15 @@ class ServiceReport(Document):
         elif self.status == "Cancelled":
             # Cancelled is allowed from Draft or Submitted
             if old_status not in ["Draft", "Submitted"]:
-                frappe.throw(_("Service Report can only be Cancelled from Draft or Submitted status."))
-        elif old_status and old_status != self.status: # Prevent invalid transitions
-            frappe.throw(_(f"Invalid status transition from {old_status} to {self.status}."))
+                frappe.throw(
+                    _(
+                        "Service Report can only be Cancelled from Draft or Submitted status."
+                    )
+                )
+        elif old_status and old_status != self.status:  # Prevent invalid transitions
+            frappe.throw(
+                _(f"Invalid status transition from {old_status} to {self.status}.")
+            )
 
     def update_service_request_on_submit(self):
         if self.service_request:
@@ -50,4 +61,8 @@ class ServiceReport(Document):
             service_request_doc.linked_report = self.name
             service_request_doc.status = "Completed"
             service_request_doc.save()
-            frappe.msgprint(_(f"Service Request {self.service_request} updated and marked as Completed."))
+            frappe.msgprint(
+                _(
+                    f"Service Request {self.service_request} updated and marked as Completed."
+                )
+            )

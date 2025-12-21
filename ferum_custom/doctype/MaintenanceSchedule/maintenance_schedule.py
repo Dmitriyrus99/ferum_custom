@@ -1,5 +1,6 @@
 import frappe
-from frappe.utils import nowdate, add_days, add_months, add_years
+from frappe.utils import add_days, add_months, add_years, nowdate
+
 
 @frappe.whitelist()
 def generate_service_requests_from_schedule():
@@ -22,12 +23,17 @@ def generate_service_requests_from_schedule():
                 service_request.service_object = item.service_object
                 if getattr(schedule, "contract", None):
                     service_request.contract = schedule.contract
-                    service_request.erpnext_project = getattr(schedule, "erpnext_project", None)
+                    service_request.erpnext_project = getattr(
+                        schedule, "erpnext_project", None
+                    )
                 else:
                     service_request.customer = schedule.customer
 
                 service_request.title = f"Scheduled Maintenance for {item.service_object} ({schedule.schedule_name})"
-                service_request.description = item.description or f"Routine maintenance as per schedule {schedule.schedule_name}"
+                service_request.description = (
+                    item.description
+                    or f"Routine maintenance as per schedule {schedule.schedule_name}"
+                )
                 service_request.status = "Open"
                 service_request.save(ignore_permissions=True)
                 frappe.db.commit()
@@ -35,12 +41,19 @@ def generate_service_requests_from_schedule():
                     doctype="ServiceRequest",
                     name=service_request.name,
                     text=f"Created from Maintenance Schedule {schedule.name}",
-                    status="Success"
+                    status="Success",
                 )
-                frappe.msgprint(f"Service Request {service_request.name} created for {item.service_object}")
+                frappe.msgprint(
+                    f"Service Request {service_request.name} created for {item.service_object}"
+                )
             except Exception as e:
-                frappe.log_error(f"Failed to create Service Request from Maintenance Schedule {schedule.name} for item {item.service_object}: {e}")
-                frappe.msgprint(f"Failed to create Service Request for {item.service_object}: {e}", alert=True)
+                frappe.log_error(
+                    f"Failed to create Service Request from Maintenance Schedule {schedule.name} for item {item.service_object}: {e}"
+                )
+                frappe.msgprint(
+                    f"Failed to create Service Request for {item.service_object}: {e}",
+                    alert=True,
+                )
 
         # Update next_due_date for the schedule
         if schedule.frequency == "Daily":
@@ -51,6 +64,6 @@ def generate_service_requests_from_schedule():
             schedule.next_due_date = add_months(schedule.next_due_date, 1)
         elif schedule.frequency == "Annually":
             schedule.next_due_date = add_years(schedule.next_due_date, 1)
-        
+
         schedule.save(ignore_permissions=True)
         frappe.db.commit()

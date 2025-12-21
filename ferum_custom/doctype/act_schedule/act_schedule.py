@@ -29,7 +29,9 @@ class ActSchedule(Document):
             self.document_mode = contract.document_mode
 
         if not self.project and frappe.db.has_column("Project", "contract"):
-            project = frappe.db.get_value("Project", {"contract": self.contract}, "name")
+            project = frappe.db.get_value(
+                "Project", {"contract": self.contract}, "name"
+            )
             if project:
                 self.project = project
 

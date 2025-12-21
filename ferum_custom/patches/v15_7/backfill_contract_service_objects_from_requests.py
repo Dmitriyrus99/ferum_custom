@@ -21,12 +21,16 @@ def _make_service_object_customer_required() -> None:
     )
 
 
-def _ensure_service_object_customer(service_object: str, fallback_customer: str | None) -> str | None:
+def _ensure_service_object_customer(
+    service_object: str, fallback_customer: str | None
+) -> str | None:
     so_customer = frappe.db.get_value("Service Object", service_object, "customer")
     if so_customer:
         return so_customer
     if fallback_customer:
-        frappe.db.set_value("Service Object", service_object, "customer", fallback_customer)
+        frappe.db.set_value(
+            "Service Object", service_object, "customer", fallback_customer
+        )
         return fallback_customer
     return None
 
@@ -39,7 +43,9 @@ def execute() -> None:
     """
     if not frappe.db.exists("DocType", "ContractServiceObject"):
         return
-    if not frappe.db.exists("DocType", "Service Request") or not frappe.db.exists("DocType", "Service Object"):
+    if not frappe.db.exists("DocType", "Service Request") or not frappe.db.exists(
+        "DocType", "Service Object"
+    ):
         return
 
     _make_service_object_customer_required()
@@ -67,7 +73,8 @@ def execute() -> None:
             continue
 
         if frappe.db.exists(
-            "ContractServiceObject", {"contract": contract, "service_object": service_object}
+            "ContractServiceObject",
+            {"contract": contract, "service_object": service_object},
         ):
             continue
 
@@ -76,4 +83,3 @@ def execute() -> None:
         doc.service_object = service_object
         doc.status = "Active"
         doc.insert(ignore_permissions=True)
-
