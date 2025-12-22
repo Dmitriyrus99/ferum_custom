@@ -41,7 +41,7 @@ def _ensure_named_placeholders(filters, report):
 		return filters
 
 	query = getattr(report, "query", None) or ""
-	placeholders = set(re.findall(r"%\\(([^)]+)\\)s", query))
+	placeholders = set(re.findall(r"%\(([^)]+)\)s", query))
 	if not placeholders:
 		return filters
 

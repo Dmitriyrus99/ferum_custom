@@ -8,13 +8,13 @@ def execute():
 
     query = (
         "SELECT "
-        "name AS \"Заявка:Link/Issue:150\", "
-        "project AS \"Проект:Link/Project:180\", "
+        "name AS \"Заявка:Link/Service Request:150\", "
+        "project AS \"Проект:Link/Service Project:180\", "
         "status AS \"Статус:Data:120\", "
         "priority AS \"Приоритет:Data:120\", "
         "assigned_to AS \"Назначено:Link/User:180\", "
         "modified AS \"Изменен:Datetime:160\" "
-        "FROM `tabIssue` "
+        "FROM `tabService Request` "
         "WHERE ("
         "  %(project)s IS NULL OR %(project)s = '' OR project = %(project)s"
         ") "
@@ -30,13 +30,13 @@ def execute():
                 "report_name": report_name,
                 "is_standard": "No",
                 "module": "Ferum Custom",
-                "ref_doctype": "Issue",
+                "ref_doctype": "Service Request",
                 "report_type": "Query Report",
             }
         )
 
     report.module = "Ferum Custom"
-    report.ref_doctype = "Issue"
+    report.ref_doctype = "Service Request"
     report.report_type = "Query Report"
     report.is_standard = report.is_standard or "No"
     report.disabled = 0
@@ -50,7 +50,7 @@ def execute():
                 "fieldname": "project",
                 "label": "Project",
                 "fieldtype": "Link",
-                "options": "Project",
+                "options": "Service Project",
                 "mandatory": 0,
                 "wildcard_filter": 0,
                 "default": "",

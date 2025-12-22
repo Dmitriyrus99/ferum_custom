@@ -1,15 +1,17 @@
 name: CI
 
 env:
-  PYTHON_VERSION: '3.10'
+  PYTHON_VERSION: '3.12'
   NODE_VERSION: '18'
   BENCH_PATH: /home/runner/frappe-bench
 
 on:
   push:
     branches:
+      - main
       - develop
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -22,7 +24,6 @@ jobs:
     strategy:
       fail-fast: false
     name: Server
-    environment: tests
 
     services:
       redis-cache:
@@ -154,8 +155,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: tests
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment: deploy
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' && secrets.SSH_HOST != '' && secrets.SSH_USERNAME != '' && secrets.SSH_KEY != '' && secrets.DEPLOY_PATH != '' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -167,12 +167,19 @@ jobs:
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            cd /path/to/your/project/on/server # Change to your project directory on the server
-            git pull origin develop # Pull the latest changes
-            docker-compose down # Stop existing containers
-            docker-compose pull # Pull latest images (if using image registry)
-            docker-compose up -d --build # Rebuild and start containers
-            # Optional: Run migrations on the deployed ERPNext instance
-            # docker exec -it <erpnext_container_name> bench --site <your_site_name> migrate
-            # Optional: Restart ERPNext bench if needed
-            # docker exec -it <erpnext_container_name> bench restart
+            set -e
+            cd "${{ secrets.DEPLOY_PATH }}"
+
+            git fetch --prune
+            git checkout main
+            git pull --ff-only origin main
+
+            if docker compose version >/dev/null 2>&1; then
+              COMPOSE="docker compose"
+            else
+              COMPOSE="docker-compose"
+            fi
+
+            $COMPOSE down
+            $COMPOSE pull
+            $COMPOSE up -d --build
