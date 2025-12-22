@@ -6,12 +6,12 @@
  "engine": "InnoDB",
  "field_order": [
   "company",
+  "project",
   "default_engineer",
   "object_name",
   "address",
-  "customer",
   "type",
-  "project"
+  "customer"
  ],
  "fields": [
   {
@@ -19,13 +19,25 @@
    "fieldtype": "Link",
    "label": "Company",
    "options": "Company",
+   "fetch_from": "project.company",
+   "fetch_if_empty": 1,
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Service Project",
    "reqd": 1
   },
   {
    "fieldname": "default_engineer",
    "fieldtype": "Link",
    "label": "Default Engineer",
-   "options": "User"
+   "options": "User",
+   "fetch_from": "project.default_engineer",
+   "fetch_if_empty": 1
   },
   {
    "fieldname": "object_name",
@@ -40,23 +52,18 @@
    "label": "Address"
   },
   {
-   "fieldname": "customer",
-   "fieldtype": "Link",
-   "label": "Customer",
-   "options": "Customer",
-   "reqd": 1
-  },
-  {
    "fieldname": "type",
    "fieldtype": "Data",
    "label": "Type"
   },
   {
-   "fieldname": "project",
+   "fieldname": "customer",
    "fieldtype": "Link",
    "hidden": 1,
-   "label": "Service Project (Legacy)",
-   "options": "Service Project",
+   "label": "Customer",
+   "options": "Customer",
+   "fetch_from": "project.customer",
+   "fetch_if_empty": 1,
    "read_only": 1
   }
  ],
