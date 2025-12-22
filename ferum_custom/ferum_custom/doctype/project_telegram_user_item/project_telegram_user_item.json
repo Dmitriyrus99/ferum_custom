@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "creation": "2025-12-17 21:37:57.520259",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "telegram_user",
+  "user",
+  "telegram_username",
+  "chat_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "telegram_user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Telegram User",
+   "options": "Telegram User Link",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "telegram_user.user",
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "ERPNext User",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "telegram_user.telegram_username",
+   "fieldname": "telegram_username",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Telegram Username",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "telegram_user.chat_id",
+   "fieldname": "chat_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Chat ID",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2025-12-17 21:37:57.520259",
+ "modified_by": "Administrator",
+ "module": "Ferum Custom",
+ "name": "Project Telegram User Item",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Project Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Office Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

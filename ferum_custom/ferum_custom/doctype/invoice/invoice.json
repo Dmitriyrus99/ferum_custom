@@ -1,0 +1,199 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-08-20 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "invoice_no",
+  "invoice_year",
+  "project",
+  "service_request",
+  "service_report",
+  "counterparty_type",
+  "customer",
+  "counterparty_name",
+  "status",
+  "invoice_date",
+  "amount",
+  "erpnext_integration_section",
+  "sales_invoice",
+  "attachments_section",
+  "attachments",
+  "income_account",
+  "cost_center"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "invoice_no",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Invoice No"
+  },
+  {
+   "fieldname": "invoice_year",
+   "fieldtype": "Int",
+   "in_standard_filter": 1,
+   "label": "Year"
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Service Project (Legacy)",
+   "options": "Service Project",
+   "read_only": 1
+  },
+  {
+   "fieldname": "service_request",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Service Request",
+   "options": "Service Request"
+  },
+  {
+   "description": "\u041e\u043f\u0446\u0438\u043e\u043d\u0430\u043b\u044c\u043d\u043e: \u0441\u0432\u044f\u0437\u044b\u0432\u0430\u0439\u0442\u0435 \u0441\u0447\u0435\u0442 \u0441 \u0430\u043a\u0442\u043e\u043c/\u0437\u0430\u044f\u0432\u043a\u043e\u0439 \u0434\u043b\u044f \u0442\u0440\u0430\u0441\u0441\u0438\u0440\u043e\u0432\u043a\u0438",
+   "fieldname": "service_report",
+   "fieldtype": "Link",
+   "label": "Service Report",
+   "options": "Service Report"
+  },
+  {
+   "fieldname": "counterparty_type",
+   "fieldtype": "Select",
+   "label": "Counterparty Type",
+   "options": "Customer\nSubcontractor",
+   "reqd": 1
+  },
+  {
+   "description": "\u0418\u0441\u043f\u043e\u043b\u044c\u0437\u0443\u0439\u0442\u0435 \u0441\u0442\u0430\u043d\u0434\u0430\u0440\u0442\u043d\u043e\u0433\u043e \u043a\u043b\u0438\u0435\u043d\u0442\u0430; \u0438\u043c\u044f \u0431\u0443\u0434\u0435\u0442 \u043f\u0440\u043e\u0434\u0443\u0431\u043b\u0438\u0440\u043e\u0432\u0430\u043d\u043e \u0432 Counterparty Name",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "counterparty_name",
+   "fieldtype": "Data",
+   "label": "Counterparty Name",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nSent\nPaid\nCancelled",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "invoice_date",
+   "fieldtype": "Date",
+   "label": "Invoice Date"
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "reqd": 1
+  },
+  {
+   "fieldname": "erpnext_integration_section",
+   "fieldtype": "Section Break",
+   "label": "ERPNext Integration"
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "attachments_section",
+   "fieldtype": "Section Break",
+   "label": "Attachments"
+  },
+  {
+   "fieldname": "attachments",
+   "fieldtype": "Table",
+   "label": "Attachments",
+   "options": "Document Attachment Item"
+  },
+  {
+   "description": "\u0415\u0441\u043b\u0438 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u043e, \u043f\u043e\u043f\u0430\u0434\u0435\u0442 \u0432 Sales Invoice; \u0438\u043d\u0430\u0447\u0435 \u0432\u043e\u0437\u044c\u043c\u0435\u0442\u0441\u044f \u0438\u0437 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a",
+   "fieldname": "income_account",
+   "fieldtype": "Link",
+   "label": "Income Account",
+   "options": "Account"
+  },
+  {
+   "description": "\u0415\u0441\u043b\u0438 \u0437\u0430\u043f\u043e\u043b\u043d\u0435\u043d\u043e, \u043f\u043e\u043f\u0430\u0434\u0435\u0442 \u0432 Sales Invoice; \u0438\u043d\u0430\u0447\u0435 \u0432\u043e\u0437\u044c\u043c\u0435\u0442\u0441\u044f \u0438\u0437 \u043d\u0430\u0441\u0442\u0440\u043e\u0435\u043a",
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2024-08-20 12:00:00",
+ "modified_by": "Administrator",
+ "module": "Ferum Custom",
+ "name": "Invoice",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Project Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Office Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Chief Accountant",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Department Head"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

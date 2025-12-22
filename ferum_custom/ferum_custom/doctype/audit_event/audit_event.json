@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:label",
+ "creation": "2025-12-17 21:37:50.572055",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "event_time",
+  "user",
+  "ref_doctype",
+  "ref_docname",
+  "event_type",
+  "message",
+  "details_json"
+ ],
+ "fields": [
+  {
+   "default": "Now",
+   "fieldname": "event_time",
+   "fieldtype": "Datetime",
+   "label": "Event Time"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
+  },
+  {
+   "fieldname": "ref_doctype",
+   "fieldtype": "Link",
+   "label": "Ref DocType",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "ref_docname",
+   "fieldtype": "Dynamic Link",
+   "label": "Ref Name",
+   "options": "ref_doctype"
+  },
+  {
+   "fieldname": "event_type",
+   "fieldtype": "Data",
+   "label": "Event Type"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Small Text",
+   "label": "Message"
+  },
+  {
+   "fieldname": "details_json",
+   "fieldtype": "JSON",
+   "label": "Details JSON"
+  }
+ ],
+ "links": [],
+ "modified": "2025-12-17 21:37:50.572055",
+ "modified_by": "Administrator",
+ "module": "Ferum Custom",
+ "name": "Audit Event",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

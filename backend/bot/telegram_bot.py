@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 from typing import TYPE_CHECKING, Any
 
 import httpx
@@ -30,9 +31,14 @@ bot = (
 dp = Dispatcher() if Dispatcher else None
 
 # Base URL for your FastAPI backend
-FASTAPI_BASE_URL = (
-    "http://localhost:8000/api/v1"  # Adjust if your FastAPI is on a different host/port
-)
+FASTAPI_BASE_URL = os.getenv("FERUM_FASTAPI_BASE_URL") or os.getenv("FASTAPI_BASE_URL") or "http://localhost:8000/api/v1"
+
+
+def _fastapi_auth_headers() -> dict[str, str]:
+	token = os.getenv("FERUM_FASTAPI_AUTH_TOKEN") or os.getenv("FASTAPI_AUTH_TOKEN") or ""
+	if not token:
+		return {}
+	return {"Authorization": f"Bearer {token}"}
 
 
 if dp and CommandStart:
@@ -73,9 +79,10 @@ if dp and Command:
             # In a real scenario, the bot would have a way to authenticate with the FastAPI backend
             # and get a JWT token for the user (e.g., after a /login command).
             # For now, we'll use a hardcoded token or assume the bot has a service token.
-            headers = {
-                "Authorization": "Bearer YOUR_FASTAPI_JWT_TOKEN"
-            }  # REPLACE WITH ACTUAL TOKEN
+            headers = _fastapi_auth_headers()
+            if not headers:
+                await message.answer("Bot is not configured: missing FASTAPI auth token.")
+                return
 
             request_data = {
                 "title": description.split("\n")[0][:140],  # Use first line as title
@@ -120,9 +127,10 @@ if dp and Command:
     @dp.message(Command("my_requests"))
     async def my_requests_handler(message: Message) -> None:
         try:
-            headers = {
-                "Authorization": "Bearer YOUR_FASTAPI_JWT_TOKEN"
-            }  # REPLACE WITH ACTUAL TOKEN
+            headers = _fastapi_auth_headers()
+            if not headers:
+                await message.answer("Bot is not configured: missing FASTAPI auth token.")
+                return
             async with httpx.AsyncClient() as client:
                 response = await client.get(
                     f"{FASTAPI_BASE_URL}/requests", headers=headers

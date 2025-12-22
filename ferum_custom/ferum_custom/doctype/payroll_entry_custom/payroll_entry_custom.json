@@ -1,0 +1,80 @@
+{
+ "actions": [],
+ "autoname": "PEC-.####",
+ "creation": "2025-12-17 21:37:55.642618",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "period_start",
+  "period_end",
+  "total_payroll_amount",
+  "status",
+  "employees"
+ ],
+ "fields": [
+  {
+   "fieldname": "period_start",
+   "fieldtype": "Date",
+   "label": "Period Start",
+   "reqd": 1
+  },
+  {
+   "fieldname": "period_end",
+   "fieldtype": "Date",
+   "label": "Period End",
+   "reqd": 1
+  },
+  {
+   "fieldname": "total_payroll_amount",
+   "fieldtype": "Currency",
+   "label": "Total Payroll Amount",
+   "read_only": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nCompleted"
+  },
+  {
+   "fieldname": "employees",
+   "fieldtype": "Table",
+   "label": "Employees",
+   "options": "Payroll Entry Item"
+  }
+ ],
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-12-17 21:37:55.642618",
+ "modified_by": "Administrator",
+ "module": "Ferum Custom",
+ "name": "Payroll Entry Custom",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "Chief Accountant",
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

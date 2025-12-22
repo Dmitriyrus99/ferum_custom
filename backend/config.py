@@ -1,8 +1,10 @@
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+_dotenv_path = os.getenv("DOTENV_PATH") or os.getenv("FERUM_DOTENV_PATH") or str(Path.cwd() / ".env")
+load_dotenv(dotenv_path=_dotenv_path, override=False)
 
 
 class Settings:
@@ -12,7 +14,7 @@ class Settings:
 	ERP_API_URL: str = os.getenv("ERP_API_URL", "http://localhost:8000")
 	ERP_API_KEY: str | None = os.getenv("ERP_API_KEY")
 	ERP_API_SECRET: str | None = os.getenv("ERP_API_SECRET")
-	TELEGRAM_BOT_TOKEN: str | None = os.getenv("TELEGRAM_BOT_TOKEN")
+	TELEGRAM_BOT_TOKEN: str | None = os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("FERUM_TELEGRAM_BOT_TOKEN")
 	SENTRY_DSN: str | None = os.getenv("SENTRY_DSN")
 	REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 

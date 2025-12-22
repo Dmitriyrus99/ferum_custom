@@ -1,0 +1,115 @@
+{
+ "actions": [],
+ "autoname": "CA-.####",
+ "creation": "2025-12-17 21:38:11.698339",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "file_name",
+  "file_url",
+  "drive_file_id",
+  "drive_web_link",
+  "file_type",
+  "uploaded_by",
+  "uploaded_on",
+  "linked_doctype",
+  "linked_docname"
+ ],
+ "fields": [
+  {
+   "fieldname": "file_name",
+   "fieldtype": "Data",
+   "label": "File Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "file_url",
+   "fieldtype": "Data",
+   "label": "File URL",
+   "reqd": 1
+  },
+  {
+   "fieldname": "drive_file_id",
+   "fieldtype": "Data",
+   "label": "Drive File ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "drive_web_link",
+   "fieldtype": "Data",
+   "label": "Drive Web Link",
+   "read_only": 1
+  },
+  {
+   "fieldname": "file_type",
+   "fieldtype": "Data",
+   "label": "File Type"
+  },
+  {
+   "fieldname": "uploaded_by",
+   "fieldtype": "Link",
+   "label": "Uploaded By",
+   "options": "User"
+  },
+  {
+   "fieldname": "uploaded_on",
+   "fieldtype": "Datetime",
+   "label": "Uploaded On"
+  },
+  {
+   "fieldname": "linked_doctype",
+   "fieldtype": "Data",
+   "label": "Linked DocType"
+  },
+  {
+   "fieldname": "linked_docname",
+   "fieldtype": "Data",
+   "label": "Linked DocName"
+  }
+ ],
+ "links": [],
+ "modified": "2025-12-17 21:38:11.698339",
+ "modified_by": "Administrator",
+ "module": "Ferum Custom",
+ "name": "Custom Attachment",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Project Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "Office Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Service Engineer"
+  },
+  {
+   "read": 1,
+   "role": "Chief Accountant"
+  },
+  {
+   "read": 1,
+   "role": "Client"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

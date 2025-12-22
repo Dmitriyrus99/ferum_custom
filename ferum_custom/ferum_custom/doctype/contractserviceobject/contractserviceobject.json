@@ -1,0 +1,138 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "CSO-.YYYY.-.#####",
+ "creation": "2025-12-19 13:55:55.629832",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "contract",
+  "service_object",
+  "status",
+  "service_frequency",
+  "sla_response_hours",
+  "sla_fix_hours",
+  "access_windows",
+  "is_billable"
+ ],
+ "fields": [
+  {
+   "fieldname": "contract",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Contract",
+   "options": "Contract",
+   "reqd": 1
+  },
+  {
+   "fieldname": "service_object",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Service Object",
+   "options": "Service Object",
+   "reqd": 1
+  },
+  {
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Active\nInactive"
+  },
+  {
+   "fieldname": "service_frequency",
+   "fieldtype": "Select",
+   "label": "Service Frequency",
+   "options": "Monthly\nQuarterly\nSemiannual\nAnnual\nCustom"
+  },
+  {
+   "fieldname": "sla_response_hours",
+   "fieldtype": "Int",
+   "label": "SLA Response Hours"
+  },
+  {
+   "fieldname": "sla_fix_hours",
+   "fieldtype": "Int",
+   "label": "SLA Fix Hours"
+  },
+  {
+   "fieldname": "access_windows",
+   "fieldtype": "Small Text",
+   "label": "Access Windows"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_billable",
+   "fieldtype": "Check",
+   "label": "Billable"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-12-19 13:55:55.629832",
+ "modified_by": "Administrator",
+ "module": "Ferum Custom",
+ "name": "ContractServiceObject",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Administrator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Department Head",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Project Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Office Manager",
+   "share": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Client",
+   "share": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,132 @@
+{
+ "actions": [],
+ "autoname": "SRPT-.####",
+ "creation": "2025-12-17 21:37:57.748221",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "service_department",
+  "service_request",
+  "report_date",
+  "status",
+  "total_amount",
+  "total_payable",
+  "work_items",
+  "documents"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "service_department",
+   "fieldtype": "Link",
+   "label": "Service Department",
+   "options": "Service Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "service_request",
+   "fieldtype": "Link",
+   "label": "Service Request",
+   "options": "Service Request",
+   "reqd": 1
+  },
+  {
+   "fieldname": "report_date",
+   "fieldtype": "Date",
+   "label": "Report Date",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nSubmitted\nApproved\nArchived\nCancelled"
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "Total Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_payable",
+   "fieldtype": "Currency",
+   "label": "Total Payable",
+   "read_only": 1
+  },
+  {
+   "fieldname": "work_items",
+   "fieldtype": "Table",
+   "label": "Work Items",
+   "options": "Service Report Work Item"
+  },
+  {
+   "fieldname": "documents",
+   "fieldtype": "Table",
+   "label": "Documents",
+   "options": "Service Report Document Item"
+  }
+ ],
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-12-17 21:37:57.748221",
+ "modified_by": "Administrator",
+ "module": "Ferum Custom",
+ "name": "Service Report",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "amend": 1,
+   "cancel": 1,
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "cancel": 1,
+   "create": 1,
+   "read": 1,
+   "role": "Project Manager",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Service Engineer",
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Office Manager"
+  },
+  {
+   "read": 1,
+   "role": "Chief Accountant"
+  },
+  {
+   "read": 1,
+   "role": "Client"
+  },
+  {
+   "read": 1,
+   "role": "Department Head"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

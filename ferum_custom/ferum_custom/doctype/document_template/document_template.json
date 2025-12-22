@@ -1,0 +1,110 @@
+{
+ "actions": [],
+ "autoname": "field:template_name",
+ "creation": "2025-12-17 21:37:50.331689",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "template_name",
+  "active",
+  "target",
+  "when",
+  "output",
+  "file_name_pattern",
+  "template_body",
+  "section_advanced",
+  "default_recipients"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Template Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active"
+  },
+  {
+   "fieldname": "target",
+   "fieldtype": "Select",
+   "label": "Target",
+   "options": "Project\nTask\nTimesheet\nCustom",
+   "reqd": 1
+  },
+  {
+   "default": "manual",
+   "fieldname": "when",
+   "fieldtype": "Select",
+   "label": "When",
+   "options": "manual\non_project_create\non_task_completed",
+   "reqd": 1
+  },
+  {
+   "default": "PDF",
+   "fieldname": "output",
+   "fieldtype": "Select",
+   "label": "Output",
+   "options": "PDF\nHTML"
+  },
+  {
+   "description": "e.g. {{ doc.name }}-contract.pdf",
+   "fieldname": "file_name_pattern",
+   "fieldtype": "Data",
+   "label": "File Name Pattern"
+  },
+  {
+   "fieldname": "template_body",
+   "fieldtype": "Code",
+   "label": "Template Body (Jinja/HTML)",
+   "options": "HTML",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_advanced",
+   "fieldtype": "Section Break",
+   "label": "Advanced"
+  },
+  {
+   "fieldname": "default_recipients",
+   "fieldtype": "Table MultiSelect",
+   "label": "Default Recipient Roles",
+   "options": "Has Role"
+  }
+ ],
+ "links": [],
+ "modified": "2025-12-17 21:37:50.331689",
+ "modified_by": "Administrator",
+ "module": "Ferum Custom",
+ "name": "Document Template",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Project Manager"
+  },
+  {
+   "read": 1,
+   "role": "Office Manager"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

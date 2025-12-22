@@ -1,0 +1,60 @@
+{
+ "actions": [],
+ "autoname": "field:department_name",
+ "creation": "2025-12-17 21:37:56.572072",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "department_name",
+  "company"
+ ],
+ "fields": [
+  {
+   "fieldname": "department_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Department Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  }
+ ],
+ "links": [],
+ "modified": "2025-12-17 21:37:56.572072",
+ "modified_by": "Administrator",
+ "module": "Ferum Custom",
+ "name": "Service Department",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Project Manager"
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Office Manager"
+  },
+  {
+   "read": 1,
+   "role": "Department Head"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
