@@ -1,6 +1,9 @@
 
 name: Linters
 
+env:
+  PYTHON_VERSION: '3.10'
+
 on:
   push:
     branches:
@@ -20,21 +23,37 @@ jobs:
     name: 'Frappe Linter'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment: linting
 
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
           cache-dependency-path: |
             **/*requirements*.txt
             **/pyproject.toml
             **/setup.py
             **/setup.cfg
+
+      - name: Cache pre-commit hooks
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+
       - uses: pre-commit/action@v3.0.0
 
+      - name: Cache Semgrep rules
+        id: semgrep-rules
+        uses: actions/cache@v4
+        with:
+          path: frappe-semgrep-rules
+          key: ${{ runner.os }}-semgrep-rules-${{ hashFiles('.github/semgrep-rules.version') }}
+
       - name: Download Semgrep rules
+        if: steps.semgrep-rules.outputs.cache-hit != 'true'
         run: git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
 
       - name: Run Semgrep rules
