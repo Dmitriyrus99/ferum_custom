@@ -8,6 +8,7 @@
   "user",
   "telegram_username",
   "chat_id",
+  "active_project",
   "is_admin",
   "notes"
  ],
@@ -15,30 +16,36 @@
   {
    "fieldname": "user",
    "fieldtype": "Link",
-   "label": "ERPNext User",
+   "label": "Пользователь ERP",
    "options": "User",
    "reqd": 1
   },
   {
    "fieldname": "telegram_username",
    "fieldtype": "Data",
-   "label": "Telegram Username"
+   "label": "Имя пользователя Telegram"
   },
   {
    "fieldname": "chat_id",
    "fieldtype": "Data",
-   "label": "Telegram Chat ID",
+   "label": "Chat ID",
    "reqd": 1
+  },
+  {
+   "fieldname": "active_project",
+   "fieldtype": "Link",
+   "label": "Активный проект",
+   "options": "Project"
   },
   {
    "fieldname": "is_admin",
    "fieldtype": "Check",
-   "label": "Treat as Telegram Admin"
+   "label": "Администратор Telegram"
   },
   {
    "fieldname": "notes",
    "fieldtype": "Small Text",
-   "label": "Notes"
+   "label": "Примечание"
   }
  ],
  "links": [],

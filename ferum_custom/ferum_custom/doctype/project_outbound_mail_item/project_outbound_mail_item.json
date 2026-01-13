@@ -1,0 +1,99 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2025-12-25 00:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "package_type",
+    "sent_date",
+    "sent_by",
+    "russian_post_tracking",
+    "inventory_scan",
+    "receipt_scan",
+    "status"
+  ],
+  "fields": [
+    {
+      "fieldname": "package_type",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Тип отправления",
+      "options": "Access letter\nOrder\nDoc request\nContacts card\nSchedule\nJournals\nFinancial originals\nOther",
+      "reqd": 1
+    },
+    {
+      "fieldname": "sent_date",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Дата отправки"
+    },
+    {
+      "fieldname": "sent_by",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Отправил",
+      "options": "User",
+      "read_only": 1
+    },
+    {
+      "fieldname": "russian_post_tracking",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Трек-номер Почты России"
+    },
+    {
+      "fieldname": "inventory_scan",
+      "fieldtype": "Attach",
+      "label": "Скан описи"
+    },
+    {
+      "fieldname": "receipt_scan",
+      "fieldtype": "Attach",
+      "label": "Скан чека"
+    },
+    {
+      "default": "Unknown",
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Статус",
+      "options": "Sent\nDelivered\nReturned\nUnknown"
+    }
+  ],
+  "istable": 1,
+  "links": [],
+  "modified": "2025-12-25 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Ferum Custom",
+  "name": "Project Outbound Mail Item",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "System Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "Office Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "Project Manager",
+      "write": 1
+    }
+  ],
+  "row_format": "Dynamic",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

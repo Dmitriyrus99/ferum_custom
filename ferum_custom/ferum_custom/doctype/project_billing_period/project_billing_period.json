@@ -1,0 +1,140 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2025-12-25 00:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "period_type",
+    "period_start",
+    "period_end",
+    "docs_prepare_from",
+    "docs_prepare_to",
+    "docs_send_from",
+    "docs_send_to",
+    "invoice_sent_date",
+    "act_sent_date",
+    "originals_sent_tracking",
+    "customer_docs_received_confirmed",
+    "payment_due_date",
+    "payment_status",
+    "payment_control_notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "period_type",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Тип периода",
+      "options": "Monthly\nQuarterly\nOther",
+      "reqd": 1
+    },
+    {
+      "fieldname": "period_start",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Начало периода",
+      "reqd": 1
+    },
+    {
+      "fieldname": "period_end",
+      "fieldtype": "Date",
+      "in_list_view": 1,
+      "label": "Конец периода",
+      "reqd": 1
+    },
+    {
+      "fieldname": "docs_prepare_from",
+      "fieldtype": "Date",
+      "label": "Подготовка документов: с"
+    },
+    {
+      "fieldname": "docs_prepare_to",
+      "fieldtype": "Date",
+      "label": "Подготовка документов: по"
+    },
+    {
+      "fieldname": "docs_send_from",
+      "fieldtype": "Date",
+      "label": "Отправка документов: с"
+    },
+    {
+      "fieldname": "docs_send_to",
+      "fieldtype": "Date",
+      "label": "Отправка документов: по"
+    },
+    {
+      "fieldname": "invoice_sent_date",
+      "fieldtype": "Date",
+      "label": "Дата отправки счёта"
+    },
+    {
+      "fieldname": "act_sent_date",
+      "fieldtype": "Date",
+      "label": "Дата отправки акта"
+    },
+    {
+      "fieldname": "originals_sent_tracking",
+      "fieldtype": "Data",
+      "label": "Трек-номер оригиналов"
+    },
+    {
+      "fieldname": "customer_docs_received_confirmed",
+      "fieldtype": "Check",
+      "label": "Получение документов заказчиком подтверждено"
+    },
+    {
+      "fieldname": "payment_due_date",
+      "fieldtype": "Date",
+      "label": "Срок оплаты"
+    },
+    {
+      "default": "Unpaid",
+      "fieldname": "payment_status",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Статус оплаты",
+      "options": "Unpaid\nPartly\nPaid"
+    },
+    {
+      "fieldname": "payment_control_notes",
+      "fieldtype": "Small Text",
+      "label": "Примечания по оплате"
+    }
+  ],
+  "istable": 1,
+  "links": [],
+  "modified": "2025-12-25 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Ferum Custom",
+  "name": "Project Billing Period",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "System Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "Project Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "Office Manager",
+      "write": 1
+    }
+  ],
+  "row_format": "Dynamic",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

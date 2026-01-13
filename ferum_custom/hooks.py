@@ -119,6 +119,7 @@ app_license = "mit"
 
 permission_query_conditions = {
 	"Contract": "ferum_custom.security.portal_permissions.contract_permission_query_conditions",
+	"File": "ferum_custom.security.file_permissions.file_permission_query_conditions",
 }
 
 has_permission = {
@@ -127,6 +128,7 @@ has_permission = {
 	"Invoice": "ferum_custom.security.portal_permissions.invoice_has_permission",
 	"ServiceProject": "ferum_custom.security.service_project_permissions.service_project_has_permission",
 	"Service Project": "ferum_custom.security.service_project_permissions.service_project_has_permission",
+	"File": "ferum_custom.security.file_permissions.file_has_permission",
 }
 
 # DocType Class
@@ -149,7 +151,9 @@ doc_events = {
 		"validate": [
 			"ferum_custom.services.contract_project_sync.validate_project_has_contract",
 			"ferum_custom.services.contract_project_sync.validate_project_unique_contract",
+			"ferum_custom.services.project_full_cycle.validate_project_p0_stage_gates",
 		],
+		"after_insert": "ferum_custom.services.project_full_cycle.create_initial_project_todos",
 	},
 	"Service Request": {
 		"after_insert": "ferum_custom.notifications.notify_new_service_request",
@@ -178,7 +182,8 @@ doc_events = {
 
 scheduler_events = {
 	"daily": [
-		"ferum_custom.services.service_schedule.generate_service_requests_from_schedule"
+		"ferum_custom.services.service_schedule.generate_service_requests_from_schedule",
+		"ferum_custom.services.project_escalations.run_daily_project_escalations",
 	],
 }
 

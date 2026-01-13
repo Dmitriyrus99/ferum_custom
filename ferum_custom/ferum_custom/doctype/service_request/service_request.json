@@ -1,6 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
+ "autoname": "SR-.#####",
  "creation": "2024-08-20 12:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -12,9 +13,11 @@
   "priority",
   "sla_policy",
   "customer",
+  "erp_project",
   "project",
   "service_department",
   "service_object",
+  "project_site",
   "description",
   "assignment_section",
   "assigned_to",
@@ -35,7 +38,7 @@
   {
    "fieldname": "company",
    "fieldtype": "Link",
-   "label": "Company",
+   "label": "Компания",
    "options": "Company",
    "reqd": 1
   },
@@ -43,7 +46,7 @@
    "fieldname": "title",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Title",
+   "label": "Тема",
    "reqd": 1
   },
   {
@@ -52,14 +55,14 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Status",
+   "label": "Статус",
    "options": "Open\nIn Progress\nCompleted\nClosed\nCancelled",
    "reqd": 1
   },
   {
    "fieldname": "type",
    "fieldtype": "Select",
-   "label": "Type",
+   "label": "Тип",
    "options": "Routine Maintenance\nEmergency"
   },
   {
@@ -67,22 +70,31 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Priority",
+   "label": "Приоритет",
    "options": "Low\nMedium\nHigh"
   },
   {
    "description": "\u041e\u043f\u0446\u0438\u043e\u043d\u0430\u043b\u044c\u043d\u043e: \u0437\u0430\u0444\u0438\u043a\u0441\u0438\u0440\u043e\u0432\u0430\u0442\u044c \u0432\u044b\u0431\u0440\u0430\u043d\u043d\u0443\u044e SLA-\u043f\u043e\u043b\u0438\u0442\u0438\u043a\u0443, \u0438\u043d\u0430\u0447\u0435 \u043f\u043e\u0434\u0431\u0438\u0440\u0430\u0435\u0442\u0441\u044f \u043f\u043e \u043f\u0440\u0438\u043e\u0440\u0438\u0442\u0435\u0442\u0443/\u0442\u0438\u043f\u0443",
    "fieldname": "sla_policy",
    "fieldtype": "Link",
-   "label": "SLA Policy",
+   "label": "SLA-политика",
    "options": "SLA Policy"
   },
   {
    "fieldname": "customer",
    "fieldtype": "Link",
-   "label": "Customer",
+   "label": "Заказчик",
    "options": "Customer",
    "read_only": 1
+  },
+  {
+   "fieldname": "erp_project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Проект",
+   "options": "Project",
+   "reqd": 1
   },
   {
    "fieldname": "project",
@@ -90,95 +102,102 @@
    "hidden": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Service Project (Legacy)",
+   "label": "Проект (legacy)",
    "options": "Service Project",
    "read_only": 1
   },
   {
    "fieldname": "service_department",
    "fieldtype": "Link",
-   "label": "Service Department",
+   "label": "Отдел",
    "options": "Service Department",
    "read_only": 1
   },
   {
    "fieldname": "service_object",
    "fieldtype": "Link",
-   "label": "Service Object",
+   "hidden": 1,
+   "label": "Объект (legacy)",
    "options": "Service Object"
+  },
+  {
+   "fieldname": "project_site",
+   "fieldtype": "Link",
+   "label": "Объект",
+   "options": "Project Site"
   },
   {
    "fieldname": "description",
    "fieldtype": "Text Editor",
-   "label": "Description"
+   "label": "Описание"
   },
   {
    "fieldname": "assignment_section",
    "fieldtype": "Section Break",
-   "label": "Assignment"
+   "label": "Назначение"
   },
   {
    "fieldname": "assigned_to",
    "fieldtype": "Link",
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Assigned To",
+   "label": "Инженер",
    "options": "User"
   },
   {
    "fieldname": "timestamps_section",
    "fieldtype": "Section Break",
-   "label": "Timestamps"
+   "label": "Время"
   },
   {
    "default": "Now",
    "fieldname": "reported_datetime",
    "fieldtype": "Datetime",
-   "label": "Reported Datetime"
+   "label": "Дата обращения"
   },
   {
    "fieldname": "actual_start_datetime",
    "fieldtype": "Datetime",
-   "label": "Actual Start Datetime"
+   "label": "Начало работ"
   },
   {
    "fieldname": "actual_end_datetime",
    "fieldtype": "Datetime",
-   "label": "Actual End Datetime"
+   "label": "Окончание работ"
   },
   {
    "fieldname": "duration_hours",
    "fieldtype": "Float",
-   "label": "Duration (hours)",
+   "label": "Длительность, ч",
    "read_only": 1
   },
   {
    "fieldname": "sla_deadline",
    "fieldtype": "Datetime",
-   "label": "SLA Deadline",
+   "label": "Дедлайн SLA",
    "read_only": 1
   },
   {
    "fieldname": "attachments_section",
    "fieldtype": "Section Break",
-   "label": "Attachments"
+   "label": "Вложения"
   },
   {
    "fieldname": "attachments",
    "fieldtype": "Table",
-   "label": "Attachments",
+   "label": "Файлы",
    "options": "Document Attachment Item"
   },
   {
    "fieldname": "photos",
    "fieldtype": "Table",
-   "label": "Photos",
+   "label": "Фото",
    "options": "Request Photo Attachment Item"
   },
   {
    "fieldname": "linked_report",
    "fieldtype": "Link",
-   "label": "Service Report",
+   "label": "Сервисный отчёт",
    "options": "Service Report",
    "read_only": 1
   },
@@ -187,12 +206,12 @@
    "description": "If checked, a completion report is required before closing.",
    "fieldname": "is_billable",
    "fieldtype": "Check",
-   "label": "Billable"
+   "label": "Платно"
   },
   {
    "fieldname": "financial_details",
    "fieldtype": "Table",
-   "label": "Financial Details",
+   "label": "Финансы",
    "options": "Financial Detail",
    "permlevel": 1
   }

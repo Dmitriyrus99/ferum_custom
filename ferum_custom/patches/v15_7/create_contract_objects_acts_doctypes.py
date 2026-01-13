@@ -13,6 +13,9 @@ def _load_json(path: str) -> Any:
 
 
 def _install_doctype_from_files(doctype_json_path: str, permissions_json_path: str | None = None) -> None:
+    if not os.path.exists(doctype_json_path):
+        # Doctype files are installed via normal migrate; patch is best-effort for legacy layouts.
+        return
     doctype_doc = _load_json(doctype_json_path)
     doctype_name = doctype_doc.get("name")
     if not doctype_name:

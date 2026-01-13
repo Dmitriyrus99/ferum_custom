@@ -3,9 +3,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import socket
 
 import httpx
 from aiogram import Bot, Dispatcher
+from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.fsm.storage.memory import MemoryStorage
 
 from .telegram_bot.frappe import FrappeAPI
 from .telegram_bot.handlers.commands import build_router, default_commands
@@ -29,6 +32,7 @@ def _frappe_api(settings: Settings, client: httpx.AsyncClient) -> FrappeAPI | No
 async def _run_webhook(dp: Dispatcher, bot: Bot, settings: Settings) -> None:
 	from aiohttp import web
 	from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+	from aiogram.exceptions import TelegramNetworkError
 
 	assert settings.webhook_url, "webhook_url required"
 
@@ -51,47 +55,75 @@ async def _run_webhook(dp: Dispatcher, bot: Bot, settings: Settings) -> None:
 		settings.webhook_port,
 		settings.webhook_path,
 	)
-	await bot.set_webhook(
-		webhook_full_url,
-		secret_token=settings.webhook_secret,
-		drop_pending_updates=True,
-	)
 
 	try:
+		# If Telegram API is temporarily unavailable (DNS/network), don't crash:
+		# webhook might already be configured, and we still want to process incoming updates.
+		try:
+			await bot.set_webhook(
+				webhook_full_url,
+				secret_token=settings.webhook_secret,
+				drop_pending_updates=True,
+			)
+		except TelegramNetworkError:
+			logger.exception("Failed to set webhook (network error). Keeping server running anyway.")
+
 		while True:
 			await asyncio.sleep(3600)
 	finally:
-		await bot.delete_webhook(drop_pending_updates=False)
+		try:
+			await bot.delete_webhook(drop_pending_updates=False)
+		except Exception:
+			logger.exception("Failed to delete webhook during shutdown")
 		await runner.cleanup()
 
 
 async def _run_once() -> None:
 	settings = load_settings()
 
-	bot = Bot(token=settings.telegram_bot_token)
-	dp = Dispatcher()
-	async with httpx.AsyncClient() as http_client:
-		api = _frappe_api(settings, http_client)
-		dp.include_router(build_router(settings, api))
+	# Force IPv4 for Telegram API calls to avoid intermittent IPv6/DNS issues seen in production logs.
+	telegram_session = AiohttpSession(timeout=20.0)
+	telegram_session._connector_init["family"] = socket.AF_INET  # noqa: SLF001
+	bot = Bot(token=settings.telegram_bot_token, session=telegram_session)
+	dp = Dispatcher(storage=MemoryStorage())
+	try:
+		async with httpx.AsyncClient() as http_client:
+			api = _frappe_api(settings, http_client)
+			dp.include_router(build_router(settings, api))
 
+			try:
+				await bot.set_my_commands(default_commands())
+			except Exception as e:
+				# Avoid noisy crash-loops on frequent restarts.
+				from aiogram.exceptions import TelegramRetryAfter  # noqa: PLC0415
+
+				if isinstance(e, TelegramRetryAfter):
+					logger.warning(
+						"Telegram rate limit on SetMyCommands; retry after %ss. Skipping for now.",
+						getattr(e, "retry_after", None),
+					)
+				else:
+					logger.exception("Failed to set bot commands")
+
+			try:
+				me = await bot.get_me()
+				logger.info("Bot started as @%s (id=%s), mode=%s", me.username, me.id, settings.mode)
+			except Exception:
+				logger.exception("Failed to fetch bot identity")
+
+			if settings.mode == "webhook":
+				await _run_webhook(dp, bot, settings)
+				return
+
+			# Default to polling.
+			await bot.delete_webhook(drop_pending_updates=True)
+			await dp.start_polling(bot)
+	finally:
+		# Avoid aiohttp warnings/leaks on crashes/restarts.
 		try:
-			await bot.set_my_commands(default_commands())
+			await bot.session.close()
 		except Exception:
-			logger.exception("Failed to set bot commands")
-
-		try:
-			me = await bot.get_me()
-			logger.info("Bot started as @%s (id=%s), mode=%s", me.username, me.id, settings.mode)
-		except Exception:
-			logger.exception("Failed to fetch bot identity")
-
-		if settings.mode == "webhook":
-			await _run_webhook(dp, bot, settings)
-			return
-
-		# Default to polling.
-		await bot.delete_webhook(drop_pending_updates=True)
-		await dp.start_polling(bot)
+			logger.exception("Failed to close bot session")
 
 
 if __name__ == "__main__":

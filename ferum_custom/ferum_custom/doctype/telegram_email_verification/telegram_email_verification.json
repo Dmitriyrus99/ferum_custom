@@ -1,0 +1,114 @@
+{
+  "actions": [],
+  "autoname": "TGEV-.####",
+  "creation": "2025-12-25 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "email",
+    "chat_id",
+    "telegram_username",
+    "purpose",
+    "status",
+    "expires_at",
+    "attempts",
+    "erp_user",
+    "code_hash",
+    "code_salt",
+    "verified_at"
+  ],
+  "fields": [
+    {
+      "fieldname": "email",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Электронная почта",
+      "reqd": 1
+    },
+    {
+      "fieldname": "chat_id",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "ID чата",
+      "reqd": 1
+    },
+    {
+      "fieldname": "telegram_username",
+      "fieldtype": "Data",
+      "label": "Имя пользователя Telegram"
+    },
+    {
+      "fieldname": "purpose",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Цель",
+      "options": "registration\n",
+      "reqd": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Статус",
+      "options": "Pending\nVerified\nExpired\nLocked\n",
+      "reqd": 1
+    },
+    {
+      "fieldname": "expires_at",
+      "fieldtype": "Datetime",
+      "in_list_view": 1,
+      "label": "Действует до",
+      "reqd": 1
+    },
+    {
+      "fieldname": "attempts",
+      "fieldtype": "Int",
+      "label": "Попыток"
+    },
+    {
+      "fieldname": "erp_user",
+      "fieldtype": "Link",
+      "label": "Пользователь ERP",
+      "options": "User"
+    },
+    {
+      "fieldname": "code_hash",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "label": "Хэш кода",
+      "reqd": 1
+    },
+    {
+      "fieldname": "code_salt",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "label": "Соль",
+      "reqd": 1
+    },
+    {
+      "fieldname": "verified_at",
+      "fieldtype": "Datetime",
+      "hidden": 1,
+      "label": "Подтверждено в"
+    }
+  ],
+  "links": [],
+  "modified": "2025-12-25 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Ferum Custom",
+  "name": "Telegram Email Verification",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "System Manager",
+      "write": 1
+    }
+  ],
+  "quick_entry": 0,
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

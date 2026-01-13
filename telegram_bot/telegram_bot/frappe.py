@@ -68,6 +68,7 @@ class FrappeAPI:
 		*,
 		params: dict[str, str] | None = None,
 		json_body: dict | None = None,
+		timeout: float | None = None,
 	) -> Any:
 		url = f"{self.base_url}{path}"
 		resp = await self.client.request(
@@ -76,7 +77,7 @@ class FrappeAPI:
 			params=params,
 			json=json_body,
 			headers=self.headers,
-			timeout=20.0,
+			timeout=timeout or 20.0,
 		)
 		if resp.status_code >= 400:
 			payload: Any
@@ -127,8 +128,37 @@ class FrappeAPI:
 		payload = await self._request("PUT", path, json_body={"data": data})
 		return payload.get("data") or {}
 
-	async def call(self, method: str, params: dict | None = None) -> dict:
-		path = f"/api/method/{method}"
-		payload = await self._request("GET", path, params={k: str(v) for k, v in (params or {}).items()})
-		return payload
+	async def call(self, method: str, params: dict | None = None, *, timeout: float | None = None) -> dict:
+		return await self.call_http(method, params or {}, http_method="GET", timeout=timeout)
 
+	async def call_http(
+		self,
+		method: str,
+		params: dict,
+		*,
+		http_method: str,
+		timeout: float | None = None,
+	) -> dict:
+		path = f"/api/method/{method}"
+		http_method = http_method.upper().strip()
+		if http_method == "GET":
+			return await self._request(
+				"GET",
+				path,
+				params={k: str(v) for k, v in (params or {}).items()},
+				timeout=timeout,
+			)
+		return await self._request(http_method, path, json_body=params, timeout=timeout)
+
+	async def call_message(
+		self,
+		method: str,
+		params: dict | None = None,
+		*,
+		http_method: str = "GET",
+		timeout: float | None = None,
+	) -> Any:
+		payload = await self.call_http(method, params or {}, http_method=http_method, timeout=timeout)
+		if isinstance(payload, dict) and "message" in payload:
+			return payload.get("message")
+		return payload

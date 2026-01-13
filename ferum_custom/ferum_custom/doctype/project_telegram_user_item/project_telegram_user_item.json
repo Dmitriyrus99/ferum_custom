@@ -14,7 +14,7 @@
    "fieldname": "telegram_user",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "Telegram User",
+   "label": "Пользователь Telegram",
    "options": "Telegram User Link",
    "reqd": 1
   },
@@ -23,7 +23,7 @@
    "fieldname": "user",
    "fieldtype": "Link",
    "in_list_view": 1,
-   "label": "ERPNext User",
+   "label": "Пользователь ERP",
    "options": "User",
    "read_only": 1
   },
@@ -32,7 +32,7 @@
    "fieldname": "telegram_username",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Telegram Username",
+   "label": "Имя пользователя Telegram",
    "read_only": 1
   },
   {

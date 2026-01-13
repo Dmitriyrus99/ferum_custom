@@ -64,5 +64,5 @@ def execute():
 
 		if changed:
 			_rebuild_workspace_content(ws)
+			ws.flags.ignore_links = True
 			ws.save(ignore_permissions=True)
-

@@ -45,6 +45,9 @@ jobs:
 
       - uses: pre-commit/action@v3.0.0
 
+      - name: Compile Telegram bot sources
+        run: python -m compileall -q telegram_bot/telegram_bot
+
       - name: Cache Semgrep rules
         id: semgrep-rules
         uses: actions/cache@v4

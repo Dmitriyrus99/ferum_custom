@@ -27,9 +27,31 @@ class Settings:
 	require_registration: bool
 
 
+def _find_dotenv_path() -> str:
+	# Explicit override first (used by systemd/docker).
+	explicit = os.getenv("DOTENV_PATH") or os.getenv("FERUM_DOTENV_PATH")
+	if explicit:
+		return explicit
+
+	# Local `.env` in current working directory (common for local runs).
+	cwd_env = Path.cwd() / ".env"
+	if cwd_env.exists():
+		return str(cwd_env)
+
+	# Bench root `.env` (common when the bot is run from `apps/ferum_custom/...`).
+	# settings.py -> telegram_bot -> telegram_bot -> telegram_bot -> apps/ferum_custom -> apps -> bench root
+	for parent in Path(__file__).resolve().parents[:8]:
+		candidate = parent / ".env"
+		if candidate.exists():
+			return str(candidate)
+
+	# Fallback: keep previous behavior.
+	return str(cwd_env)
+
+
 def load_settings() -> Settings:
 	# Load bench `.env` explicitly.
-	dotenv_path = os.getenv("DOTENV_PATH") or os.getenv("FERUM_DOTENV_PATH") or str(Path.cwd() / ".env")
+	dotenv_path = _find_dotenv_path()
 	load_dotenv(dotenv_path=dotenv_path, override=False)
 
 	telegram_bot_token = os.getenv("FERUM_TELEGRAM_BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN") or ""
@@ -94,4 +116,3 @@ def load_settings() -> Settings:
 		allowed_chat_ids=allowed_chat_ids,
 		require_registration=require_registration,
 	)
-

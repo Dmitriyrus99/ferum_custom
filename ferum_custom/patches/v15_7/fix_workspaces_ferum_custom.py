@@ -50,6 +50,11 @@ def _fix_report_shortcut_targets(workspace_doc) -> bool:
             continue
 
         target = getattr(row, "link_to", None)
+        # If the report doesn't exist, remove the shortcut to avoid migrate failures due to link validation.
+        if target and not frappe.db.exists("Report", target):
+            workspace_doc.remove(row)
+            changed = True
+            continue
         if target not in replacements:
             continue
 
@@ -71,4 +76,5 @@ def execute():
         content_changed = _rebuild_workspace_content(ws)
 
         if shortcut_changed or content_changed:
+            ws.flags.ignore_links = True
             ws.save(ignore_permissions=True)

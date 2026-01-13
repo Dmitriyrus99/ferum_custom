@@ -56,8 +56,12 @@ def generate_service_requests_from_schedule() -> None:
 
             if getattr(schedule, "contract", None) and service_request.meta.has_field("contract"):
                 service_request.contract = schedule.contract
-                if service_request.meta.has_field("erpnext_project"):
-                    service_request.erpnext_project = getattr(schedule, "erpnext_project", None)
+                schedule_erp_project = getattr(schedule, "erpnext_project", None)
+                if schedule_erp_project:
+                    if service_request.meta.has_field("erp_project"):
+                        service_request.erp_project = schedule_erp_project
+                    if service_request.meta.has_field("erpnext_project"):
+                        service_request.erpnext_project = schedule_erp_project
 
             service_request.save(ignore_permissions=True)
 
@@ -74,4 +78,3 @@ def generate_service_requests_from_schedule() -> None:
         schedule.save(ignore_permissions=True)
 
     frappe.db.commit()
-

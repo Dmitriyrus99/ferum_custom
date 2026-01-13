@@ -7,7 +7,10 @@ import frappe
 
 
 def _is_client_user(user: str) -> bool:
-    return user != "Administrator" and frappe.has_role("Client", user)
+    try:
+        return user != "Administrator" and "Client" in set(frappe.get_roles(user))
+    except Exception:
+        return False
 
 
 def project_permission_query_conditions(user: str, doctype: str | None = None) -> str:
