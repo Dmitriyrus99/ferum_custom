@@ -1,5 +1,3 @@
-/* global frappe */
-
 frappe.query_reports["Service Requests by Project"] = {
 	filters: [
 		{
@@ -11,4 +9,3 @@ frappe.query_reports["Service Requests by Project"] = {
 		},
 	],
 };
-

@@ -7,7 +7,6 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -22,7 +21,7 @@ async def _run_forever() -> None:
 		return
 
 	# Import after loading env, because backend.config reads env at import time.
-	from backend.bot import telegram_bot  # noqa: PLC0415
+	from backend.bot import telegram_bot
 
 	backoff_seconds = 5
 	while True:
