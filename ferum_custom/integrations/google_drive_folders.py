@@ -5,6 +5,7 @@ import mimetypes
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import Any
 
 import frappe
@@ -129,6 +130,44 @@ def _folder_web_link(folder_id: str) -> str:
 	return f"https://drive.google.com/drive/folders/{folder_id}"
 
 
+def get_drive_file(service: Any, *, file_id: str, fields: str = "id,name,mimeType,parents,webViewLink") -> dict[str, Any]:
+	file_id = str(file_id or "").strip()
+	if not file_id:
+		raise ValueError("file_id is empty")
+	return (
+		service.files()
+		.get(fileId=file_id, fields=fields, supportsAllDrives=True)
+		.execute()
+	)
+
+
+def update_drive_file(
+	service: Any,
+	*,
+	file_id: str,
+	body: dict[str, Any] | None = None,
+	add_parents: str | None = None,
+	remove_parents: str | None = None,
+	fields: str = "id,name,mimeType,parents,webViewLink",
+) -> dict[str, Any]:
+	file_id = str(file_id or "").strip()
+	if not file_id:
+		raise ValueError("file_id is empty")
+
+	return (
+		service.files()
+		.update(
+			fileId=file_id,
+			body=body or {},
+			addParents=add_parents,
+			removeParents=remove_parents,
+			fields=fields,
+			supportsAllDrives=True,
+		)
+		.execute()
+	)
+
+
 def _escape_drive_query_value(value: str) -> str:
 	# Drive query uses single quotes; escape backslash and quote.
 	return value.replace("\\", "\\\\").replace("'", "\\'")
@@ -164,7 +203,14 @@ def ensure_folder(service: Any, *, name: str, parent_id: str) -> DriveFolder:
 
 	existing = (
 		service.files()
-		.list(q=q, spaces="drive", fields="files(id, webViewLink)", pageSize=1)
+		.list(
+			q=q,
+			spaces="drive",
+			fields="files(id, webViewLink)",
+			pageSize=1,
+			includeItemsFromAllDrives=True,
+			supportsAllDrives=True,
+		)
 		.execute()
 	)
 	files = (existing or {}).get("files") or []
@@ -180,6 +226,7 @@ def ensure_folder(service: Any, *, name: str, parent_id: str) -> DriveFolder:
 		.create(
 			body={"name": name, "mimeType": _FOLDER_MIME, "parents": [parent_id]},
 			fields="id,webViewLink",
+			supportsAllDrives=True,
 		)
 		.execute()
 	)
@@ -187,6 +234,43 @@ def ensure_folder(service: Any, *, name: str, parent_id: str) -> DriveFolder:
 	if not fid:
 		raise ValueError("Failed to create folder in Drive (missing id)")
 	return DriveFolder(id=fid, web_view_link=str((created or {}).get("webViewLink") or _folder_web_link(fid)))
+
+
+def find_folder(service: Any, *, name: str, parent_id: str) -> DriveFolder | None:
+	"""Find a folder by exact name under a parent folder (no creation)."""
+	name = (name or "").strip()
+	if not name:
+		raise ValueError("Folder name is empty")
+	if not parent_id:
+		raise ValueError("parent_id is empty")
+
+	q = (
+		f"mimeType='{_FOLDER_MIME}' and trashed=false "
+		f"and name='{_escape_drive_query_value(name)}' "
+		f"and '{_escape_drive_query_value(parent_id)}' in parents"
+	)
+
+	existing = (
+		service.files()
+		.list(
+			q=q,
+			spaces="drive",
+			fields="files(id, webViewLink)",
+			pageSize=1,
+			includeItemsFromAllDrives=True,
+			supportsAllDrives=True,
+		)
+		.execute()
+	)
+	files = (existing or {}).get("files") or []
+	if not files:
+		return None
+
+	f = files[0] or {}
+	fid = str(f.get("id") or "").strip()
+	if not fid:
+		return None
+	return DriveFolder(id=fid, web_view_link=str(f.get("webViewLink") or _folder_web_link(fid)))
 
 
 def upload_file(
@@ -221,6 +305,7 @@ def upload_file(
 			body={"name": name, "parents": [parent_id]},
 			media_body=MediaFileUpload(str(p), mimetype=mime_type, resumable=False),  # type: ignore[misc]
 			fields="id,webViewLink",
+			supportsAllDrives=True,
 		)
 		.execute()
 	)
@@ -230,12 +315,90 @@ def upload_file(
 	return DriveFile(id=fid, web_view_link=str((uploaded or {}).get("webViewLink") or ""))
 
 
+def upsert_json_file(
+	service: Any,
+	*,
+	parent_id: str,
+	name: str,
+	payload: dict[str, Any],
+	indent: int = 2,
+) -> DriveFile:
+	"""Create or update a JSON file under a Drive folder (by exact name)."""
+	parent_id = str(parent_id or "").strip()
+	name = str(name or "").strip()
+	if not parent_id:
+		raise ValueError("parent_id is empty")
+	if not name:
+		raise ValueError("name is empty")
+	if not _GOOGLE_DRIVE_LIBS_OK or MediaFileUpload is None:
+		frappe.throw(_("Google Drive integration is disabled (missing google api libraries)."))
+
+	q = (
+		"trashed=false "
+		f"and name='{_escape_drive_query_value(name)}' "
+		f"and '{_escape_drive_query_value(parent_id)}' in parents"
+	)
+	existing = (
+		service.files()
+		.list(
+			q=q,
+			spaces="drive",
+			fields="files(id, webViewLink)",
+			pageSize=1,
+			includeItemsFromAllDrives=True,
+			supportsAllDrives=True,
+		)
+		.execute()
+	)
+	files = (existing or {}).get("files") or []
+	existing_id = str((files[0] or {}).get("id") or "").strip() if files else ""
+
+	with NamedTemporaryFile(prefix="drive_", suffix=".json", delete=False) as tmp:
+		tmp.write(json.dumps(payload, ensure_ascii=False, indent=indent, sort_keys=True).encode("utf-8"))
+		tmp.flush()
+		tmp_path = tmp.name
+
+	try:
+		media = MediaFileUpload(tmp_path, mimetype="application/json", resumable=False)  # type: ignore[misc]
+		if existing_id:
+			updated = (
+				service.files()
+				.update(
+					fileId=existing_id,
+					media_body=media,
+					fields="id,webViewLink",
+					supportsAllDrives=True,
+				)
+				.execute()
+			)
+			fid = str((updated or {}).get("id") or existing_id).strip()
+			return DriveFile(id=fid, web_view_link=str((updated or {}).get("webViewLink") or ""))
+
+		created = (
+			service.files()
+			.create(
+				body={"name": name, "parents": [parent_id]},
+				media_body=media,
+				fields="id,webViewLink",
+				supportsAllDrives=True,
+			)
+			.execute()
+		)
+		fid = str((created or {}).get("id") or "").strip()
+		if not fid:
+			raise ValueError("Failed to create JSON file in Drive (missing id)")
+		return DriveFile(id=fid, web_view_link=str((created or {}).get("webViewLink") or ""))
+	finally:
+		try:
+			os.remove(tmp_path)
+		except Exception:
+			pass
+
+
 def project_folder_name(*, project_code: str, project_title: str | None) -> str:
+	# Deterministic folder key: use Project ID (name) only.
 	project_code = (project_code or "").strip()
-	project_title = (project_title or "").strip()
-	if project_title and project_title != project_code:
-		return f"{project_code} — {project_title}".strip()
-	return project_code or project_title
+	return project_code or (project_title or "").strip()
 
 
 def site_folder_name(*, idx: int, site_name: str | None) -> str:

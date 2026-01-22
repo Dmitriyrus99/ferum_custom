@@ -3,25 +3,11 @@ from __future__ import annotations
 import frappe
 
 from ferum_custom.security.project_access import projects_for_user, user_has_global_project_access, user_has_project_access
-
-
-_ATTACHED_TO_FIELD = "ferum_project_documents"
-
-_CLIENT_ALLOWED_TYPES: set[str] = {
-    "Договоры с заказчиком",
-    "Закрывающие документы с подписью заказчика",
-    "Входящие письма от заказчика",
-    "Исходящие письма в адрес заказчика",
-}
-
-_UPLOAD_ROLES: set[str] = {
-    "System Manager",
-    "Project Manager",
-    "Projects Manager",
-    "Office Manager",
-    "Ferum Office Manager",
-}
-
+from ferum_custom.services.project_documents_config import (
+	ATTACHED_TO_FIELD,
+	CLIENT_ALLOWED_TYPES,
+	UPLOAD_ROLES,
+)
 
 def _is_ferum_project_document(doc) -> bool:
     if not doc:
@@ -30,7 +16,7 @@ def _is_ferum_project_document(doc) -> bool:
     attached_to_field = str(getattr(doc, "attached_to_field", "") or "").strip()
     if attached_to_doctype != "Project":
         return False
-    if attached_to_field != _ATTACHED_TO_FIELD:
+    if attached_to_field != ATTACHED_TO_FIELD:
         return False
     return True
 
@@ -64,7 +50,7 @@ def file_has_permission(doc, ptype: str | None = None, user: str | None = None) 
 
     if _is_client_user(user):
         doc_type = str(getattr(doc, "ferum_doc_type", "") or "").strip()
-        if doc_type not in _CLIENT_ALLOWED_TYPES:
+        if doc_type not in CLIENT_ALLOWED_TYPES:
             return False
 
     if ptype in {"write", "delete", "submit", "cancel", "amend"}:
@@ -74,7 +60,7 @@ def file_has_permission(doc, ptype: str | None = None, user: str | None = None) 
             roles = set()
         if "System Manager" in roles:
             return True
-        if roles.intersection(_UPLOAD_ROLES):
+        if roles.intersection(UPLOAD_ROLES):
             return True
         return False
 
@@ -103,8 +89,7 @@ def file_permission_query_conditions(user: str) -> str:
 
     ferum_allowed = f"(`tabFile`.`attached_to_name` in ({project_sql}))"
     if _is_client_user(user):
-        types_sql = ", ".join(frappe.db.escape(t) for t in sorted(_CLIENT_ALLOWED_TYPES))
+        types_sql = ", ".join(frappe.db.escape(t) for t in sorted(CLIENT_ALLOWED_TYPES))
         ferum_allowed = f"({ferum_allowed} and ifnull(`tabFile`.`ferum_doc_type`, '') in ({types_sql}))"
 
     return f"({not_ferum} or {ferum_allowed})"
-

@@ -7,37 +7,18 @@ from pathlib import Path
 
 import frappe
 from frappe import _
+from frappe.utils import now_datetime
 
 from ferum_custom.api.project_drive import ensure_drive_folders
 from ferum_custom.integrations.google_drive_folders import ensure_folder, get_drive_service, upload_file
 from ferum_custom.security.project_access import user_has_project_access
-
-
-_ATTACHED_TO_FIELD = "ferum_project_documents"
-
-_DOC_TYPES: tuple[str, ...] = (
-	"Договоры с заказчиком",
-	"Договоры с подрядчиками/исполнителями",
-	"Удостоверения и разрешительные документы исполнителей",
-	"Закрывающие документы с подписью заказчика",
-	"Входящие письма от заказчика",
-	"Исходящие письма в адрес заказчика",
+from ferum_custom.services.contract_project_sync import get_project_for_contract
+from ferum_custom.services.project_documents_config import (
+	ATTACHED_TO_FIELD,
+	CLIENT_ALLOWED_TYPES,
+	DOC_TYPES,
+	UPLOAD_ROLES,
 )
-
-_CLIENT_ALLOWED_TYPES: set[str] = {
-	"Договоры с заказчиком",
-	"Закрывающие документы с подписью заказчика",
-	"Входящие письма от заказчика",
-	"Исходящие письма в адрес заказчика",
-}
-
-_UPLOAD_ROLES: set[str] = {
-	"System Manager",
-	"Project Manager",
-	"Projects Manager",
-	"Office Manager",
-	"Ferum Office Manager",
-}
 
 
 def _has_any_role(user: str, roles: set[str]) -> bool:
@@ -70,17 +51,44 @@ def _safe_filename(name: str) -> str:
 	return name[:180] or "file"
 
 
-def _doc_type_folder_name(doc_type: str) -> str:
-	# Keep stable ordering in Drive.
-	order = {
-		_DOC_TYPES[0]: "01 Договоры с заказчиком",
-		_DOC_TYPES[1]: "02 Договоры подрядчиков/исполнителей",
-		_DOC_TYPES[2]: "03 Удостоверения и разрешения",
-		_DOC_TYPES[3]: "04 Закрывающие документы",
-		_DOC_TYPES[4]: "05 Входящие письма",
-		_DOC_TYPES[5]: "06 Исходящие письма",
-	}
-	return order.get(doc_type, _safe_filename(doc_type))
+def _contract_folder_key(contract: str) -> str:
+	contract = str(contract or "").strip()
+	if not contract:
+		return ""
+	code = None
+	try:
+		if frappe.db.has_column("Contract", "contract_code"):
+			code = frappe.db.get_value("Contract", contract, "contract_code")
+	except Exception:
+		code = None
+	code = str(code or "").strip()
+	return _safe_filename(code or contract)[:120] or _safe_filename(contract)[:120]
+
+
+def _doc_type_folder_segments(*, doc_type: str, contract: str | None) -> list[str]:
+	"""Return deterministic folder segments under 01_ДОКУМЕНТЫ for this doc type."""
+
+	now = now_datetime()
+	year = now.strftime("%Y")
+	year_month = now.strftime("%Y-%m")
+
+	if doc_type == DOC_TYPES[0]:  # Customer contracts
+		contract_key = _contract_folder_key(contract or "") or "_NO_CONTRACT"
+		return ["01_ДОГОВОРЫ_ЗАКАЗЧИК", contract_key]
+	if doc_type == DOC_TYPES[1]:  # Contractors
+		return ["02_ДОГОВОРЫ_ПОДРЯДЧИКИ"]
+	if doc_type == DOC_TYPES[2]:  # Compliance
+		return ["03_УДОСТОВЕРЕНИЯ_И_РАЗРЕШЕНИЯ"]
+	if doc_type == DOC_TYPES[3]:  # Closing
+		return ["04_ЗАКРЫВАЮЩИЕ_ДОКУМЕНТЫ", year, year_month]
+	if doc_type == DOC_TYPES[4]:  # Incoming
+		return ["05_КОРРЕСПОНДЕНЦИЯ", "01_ВХОДЯЩИЕ", year, year_month]
+	if doc_type == DOC_TYPES[5]:  # Outgoing
+		return ["05_КОРРЕСПОНДЕНЦИЯ", "02_ИСХОДЯЩИЕ", year, year_month]
+	if len(DOC_TYPES) > 6 and doc_type == DOC_TYPES[6]:  # Internal docs
+		return ["06_СЛУЖЕБНЫЕ_ДОКУМЕНТЫ", year, year_month]
+
+	return ["99_НЕРАЗОБРАННОЕ"]
 
 
 def _require_upload_access(*, user: str, project: str) -> None:
@@ -88,7 +96,7 @@ def _require_upload_access(*, user: str, project: str) -> None:
 		frappe.throw(_("Missing project."))
 	if user == "Administrator":
 		return
-	if not _has_any_role(user, _UPLOAD_ROLES):
+	if not _has_any_role(user, UPLOAD_ROLES):
 		frappe.throw(_("Not permitted."), frappe.PermissionError)
 	if not user_has_project_access(user=user, project=project):
 		frappe.throw(_("No access to project {0}.").format(project), frappe.PermissionError)
@@ -129,23 +137,21 @@ def _validate_contract_for_project(*, project: str, contract: str | None) -> str
 
 
 def _ensure_project_docs_folder_id(*, service, project: str) -> str:
+	# Ensure deterministic Drive structure exists (creates/updates Project.drive_folder_url + folders).
+	ensure_drive_folders(project)
+
 	meta = frappe.get_meta("Project")
 	drive_url = None
 	if meta.has_field("drive_folder_url") and frappe.db.has_column("Project", "drive_folder_url"):
 		drive_url = frappe.db.get_value("Project", project, "drive_folder_url")
 	drive_url = str(drive_url or "").strip() or None
 
-	if not drive_url:
-		# Creates/updates Project.drive_folder_url (and object folders).
-		ensure_drive_folders(project)
-		drive_url = frappe.db.get_value("Project", project, "drive_folder_url")
-		drive_url = str(drive_url or "").strip() or None
-
 	folder_id = _drive_folder_id_from_url(drive_url)
 	if not folder_id:
 		frappe.throw(_("Project Google Drive folder is not configured."))
 
-	docs = ensure_folder(service, name="Документы", parent_id=folder_id)
+	# Deterministic root for project documents (created by ensure_drive_folders as well).
+	docs = ensure_folder(service, name="01_ДОКУМЕНТЫ", parent_id=folder_id)
 	return docs.id
 
 
@@ -163,7 +169,7 @@ def upload_project_document() -> dict:
 		frappe.throw(_("Project not found."))
 	if not doc_title:
 		frappe.throw(_("Missing document title."))
-	if doc_type not in _DOC_TYPES:
+	if doc_type not in DOC_TYPES:
 		frappe.throw(_("Invalid document type."))
 
 	contract = _validate_contract_for_project(project=project, contract=contract)
@@ -180,7 +186,12 @@ def upload_project_document() -> dict:
 
 	service = get_drive_service()
 	parent_id = _ensure_project_docs_folder_id(service=service, project=project)
-	typed_folder = ensure_folder(service, name=_doc_type_folder_name(doc_type), parent_id=parent_id)
+
+	# Resolve deterministic folder path under 01_ДОКУМЕНТЫ
+	folder_id = parent_id
+	for segment in _doc_type_folder_segments(doc_type=doc_type, contract=contract):
+		seg = _safe_filename(segment)[:120]
+		folder_id = ensure_folder(service, name=seg, parent_id=folder_id).id
 
 	tmp_path = None
 	try:
@@ -188,7 +199,7 @@ def upload_project_document() -> dict:
 			tmp.write(content)
 			tmp_path = tmp.name
 
-		uploaded = upload_file(service, local_path=tmp_path, parent_id=typed_folder.id, name=drive_name)
+		uploaded = upload_file(service, local_path=tmp_path, parent_id=folder_id, name=drive_name)
 	finally:
 		if tmp_path:
 			try:
@@ -204,7 +215,7 @@ def upload_project_document() -> dict:
 			"is_private": 0,
 			"attached_to_doctype": "Project",
 			"attached_to_name": project,
-			"attached_to_field": _ATTACHED_TO_FIELD,
+			"attached_to_field": ATTACHED_TO_FIELD,
 			"ferum_doc_title": doc_title,
 			"ferum_doc_type": doc_type,
 			"ferum_contract": contract,
@@ -221,6 +232,26 @@ def upload_project_document() -> dict:
 		"file_name": file_doc.file_name,
 		"project": project,
 	}
+
+
+@frappe.whitelist(methods=["POST"])
+def upload_contract_document() -> dict:
+	"""Upload a document from Contract context, but always attach to the linked Project."""
+
+	contract = str(frappe.form_dict.get("contract") or frappe.form_dict.get("ferum_contract") or "").strip()
+	if not contract:
+		frappe.throw(_("Missing contract."))
+	if not frappe.db.exists("Contract", contract):
+		frappe.throw(_("Contract not found."))
+
+	project = str(get_project_for_contract(contract) or "").strip()
+	if not project:
+		frappe.throw(_("Project for Contract is not found."))
+
+	# Reuse the main implementation; it enforces permissions and validates contract linkage.
+	frappe.form_dict["project"] = project
+	frappe.form_dict["ferum_contract"] = contract
+	return upload_project_document()
 
 
 @frappe.whitelist()
@@ -243,7 +274,7 @@ def list_project_documents(
 	filters: list[list] = [
 		["File", "attached_to_doctype", "=", "Project"],
 		["File", "attached_to_name", "=", project],
-		["File", "attached_to_field", "=", _ATTACHED_TO_FIELD],
+		["File", "attached_to_field", "=", ATTACHED_TO_FIELD],
 	]
 
 	if doc_type:
@@ -254,7 +285,7 @@ def list_project_documents(
 		filters.append(["File", "creation", "<=", f"{date_to} 23:59:59"])
 
 	if _is_client_user(user) and user != "Administrator" and not _has_any_role(user, {"System Manager"}):
-		filters.append(["File", "ferum_doc_type", "in", sorted(_CLIENT_ALLOWED_TYPES)])
+		filters.append(["File", "ferum_doc_type", "in", sorted(CLIENT_ALLOWED_TYPES)])
 
 	return frappe.get_all(
 		"File",
@@ -276,9 +307,19 @@ def list_project_documents(
 
 @frappe.whitelist()
 @frappe.read_only()
-def list_contract_documents(contract: str) -> list[dict]:
+def list_contract_documents(
+	contract: str,
+	*,
+	doc_type: str | None = None,
+	date_from: str | None = None,
+	date_to: str | None = None,
+) -> list[dict]:
 	user = frappe.session.user
 	contract = str(contract or "").strip()
+	doc_type = str(doc_type or "").strip() or None
+	date_from = str(date_from or "").strip() or None
+	date_to = str(date_to or "").strip() or None
+
 	if not contract:
 		frappe.throw(_("Missing contract."))
 	if not frappe.db.exists("Contract", contract):
@@ -301,15 +342,22 @@ def list_contract_documents(contract: str) -> list[dict]:
 
 	filters: list[list] = [
 		["File", "attached_to_doctype", "=", "Project"],
-		["File", "attached_to_field", "=", _ATTACHED_TO_FIELD],
+		["File", "attached_to_field", "=", ATTACHED_TO_FIELD],
 	]
+
+	if doc_type:
+		filters.append(["File", "ferum_doc_type", "=", doc_type])
+	if date_from:
+		filters.append(["File", "creation", ">=", f"{date_from} 00:00:00"])
+	if date_to:
+		filters.append(["File", "creation", "<=", f"{date_to} 23:59:59"])
 
 	or_filters: list[list] = [["File", "ferum_contract", "=", contract]]
 	if allowed_projects:
 		or_filters.append(["File", "attached_to_name", "in", allowed_projects])
 
 	if _is_client_user(user) and user != "Administrator" and not _has_any_role(user, {"System Manager"}):
-		filters.append(["File", "ferum_doc_type", "in", sorted(_CLIENT_ALLOWED_TYPES)])
+		filters.append(["File", "ferum_doc_type", "in", sorted(CLIENT_ALLOWED_TYPES)])
 
 	rows = frappe.get_all(
 		"File",

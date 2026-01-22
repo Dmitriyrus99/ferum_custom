@@ -1,6 +1,18 @@
-exclude: 'node_modules|.git|.fastmcp-venv'
+exclude: |
+    (?x)^(
+        \.git/.*|
+        \.cache/.*|
+        node_modules/.*|
+        ferum_custom/public/dist/.*|
+        build/.*|
+        dist/.*|
+        \.fastmcp-venv/.*
+    )$
 default_stages: [pre-commit]
 fail_fast: false
+
+default_language_version:
+  python: python3.12
 
 
 repos:
@@ -18,7 +30,7 @@ repos:
       - id: debug-statements
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.1
+    rev: v0.14.11
     hooks:
       - id: ruff
         name: "Run ruff import sorter"
@@ -27,6 +39,7 @@ repos:
 
       - id: ruff
         name: "Run ruff linter"
+        args: ["--extend-ignore=I"]
         files: "^backend/.*\\.py$"
 
       - id: ruff-format
@@ -67,23 +80,25 @@ repos:
             )$
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+    rev: v1.19.1
     hooks:
       - id: mypy
-        args: [--ignore-missing-imports, --show-error-codes, --explicit-package-bases, backend]
+        args: [--config-file=pyproject.toml]
         files: ^backend/
         pass_filenames: false
         additional_dependencies:
           - types-redis
+        stages: [manual]
 
   - repo: local
     hooks:
       - id: pytest
         name: pytest
-        entry: env PYTHONPATH=. pytest
+        entry: env PYTHONPATH=. pytest -q
         language: system
         types: [python]
         pass_filenames: false
+        stages: [manual]
 
 ci:
     autoupdate_schedule: weekly

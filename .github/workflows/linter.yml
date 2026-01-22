@@ -1,5 +1,5 @@
 
-name: Linters
+name: Quality
 
 env:
   PYTHON_VERSION: '3.12'
@@ -16,12 +16,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  linter:
-    name: 'Frappe Linter'
+  pre_commit:
+    name: Pre-commit
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -32,8 +32,8 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
           cache-dependency-path: |
-            **/*requirements*.txt
             **/pyproject.toml
+            backend/requirements.txt
             **/setup.py
             **/setup.cfg
 
@@ -41,27 +41,38 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          key: ${{ runner.os }}-py${{ env.PYTHON_VERSION }}-pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-py${{ env.PYTHON_VERSION }}-pre-commit-
 
-      - uses: pre-commit/action@v3.0.0
+      - uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --all-files
 
       - name: Compile Telegram bot sources
         run: python -m compileall -q telegram_bot/telegram_bot
 
-      - name: Cache Semgrep rules
-        id: semgrep-rules
-        uses: actions/cache@v4
+  typecheck:
+    name: Mypy (backend)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          path: frappe-semgrep-rules
-          key: ${{ runner.os }}-semgrep-rules-${{ hashFiles('.github/semgrep-rules.version') }}
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            backend/requirements.txt
+            pyproject.toml
 
-      - name: Download Semgrep rules
-        if: steps.semgrep-rules.outputs.cache-hit != 'true'
-        run: git clone --depth 1 https://github.com/frappe/semgrep-rules.git frappe-semgrep-rules
+      - name: Install backend dependencies
+        run: python -m pip install -r backend/requirements.txt
 
-      - name: Run Semgrep rules
+      - name: Run mypy
         run: |
-          pip install semgrep
-          semgrep ci --config ./frappe-semgrep-rules/rules --config r/python.lang.correctness
-
+          python -m pip install "mypy==1.19.1" "types-redis"
+          python -m mypy --config-file=pyproject.toml
+  
   

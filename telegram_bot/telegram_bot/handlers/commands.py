@@ -253,7 +253,8 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		await state.update_data(projects=projects)
 		builder = InlineKeyboardBuilder()
 		for idx, row in enumerate(projects[:20]):
-			builder.button(text=_project_label(row), callback_data=f"nr_proj:{idx}")
+			project = str(row.get("name") or "").strip()
+			builder.button(text=_project_label(row), callback_data=f"nr_proj:{project or idx}")
 		builder.adjust(1)
 		await state.set_state(_NewRequest.project)
 		await message.answer(prompt, reply_markup=builder.as_markup())
@@ -295,7 +296,8 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		await state.update_data(projects=projects)
 		builder = InlineKeyboardBuilder()
 		for idx, row in enumerate(projects[:20]):
-			builder.button(text=_project_label(row), callback_data=f"sv_proj:{idx}")
+			project = str(row.get("name") or "").strip()
+			builder.button(text=_project_label(row), callback_data=f"sv_proj:{project or idx}")
 		builder.button(text="Отмена", callback_data="sv_cancel")
 		builder.adjust(1)
 		await state.set_state(_Survey.project)
@@ -424,7 +426,12 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		await state.update_data(projects=projects, pick_action=action)
 		builder = InlineKeyboardBuilder()
 		for idx, row in enumerate(projects[:20]):
-			builder.button(text=_project_label(row), callback_data=f"pick_proj:{idx}")
+			project = str(row.get("name") or "").strip()
+			if project:
+				# Stateless callback_data: do not rely on FSM storage to resolve the project.
+				builder.button(text=_project_label(row), callback_data=f"pick_proj:{action}:{project}")
+			else:
+				builder.button(text=_project_label(row), callback_data=f"pick_proj:{idx}")
 		builder.button(text="Отмена", callback_data="pick_cancel")
 		builder.adjust(1)
 		await state.set_state(_PickProject.pick)
@@ -880,7 +887,8 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			await state.update_data(projects=projects)
 			builder = InlineKeyboardBuilder()
 			for idx, row in enumerate(projects[:20]):
-				builder.button(text=_project_label(row), callback_data=f"mr_proj:{idx}")
+				project = str(row.get("name") or "").strip()
+				builder.button(text=_project_label(row), callback_data=f"mr_proj:{project or idx}")
 			builder.adjust(1)
 			await state.set_state(_MyRequestsPick.project)
 			await message.answer("Выбери проект для списка заявок:", reply_markup=builder.as_markup())
@@ -908,24 +916,51 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		message = getattr(query, "message", None)
 		if not message or not _chat_allowed(message):
 			return
-		if await state.get_state() != _MyRequestsPick.project.state:
-			await query.answer()
-			return
+		raw = str(query.data or "")
+		payload = raw.split(":", 1)[1] if ":" in raw else ""
+		selected_project: str | None = None
+		selected_label: str | None = None
+		selected_index: int | None = None
+		if payload.strip().isdigit():
+			try:
+				selected_index = int(payload.strip())
+			except Exception:
+				selected_index = None
+		else:
+			selected_project = payload.strip() or None
+
 		data = await state.get_data()
 		projects = data.get("projects") or []
-		try:
-			idx = int(str(query.data).split(":", 1)[1])
-		except Exception:
+
+		row: dict | None = None
+		if selected_project:
+			row = next((r for r in projects if str(r.get("name") or "").strip() == selected_project), None)
+			selected_label = _project_label(row) if row else selected_project
+		elif selected_index is not None:
+			if 0 <= selected_index < len(projects):
+				row = projects[selected_index]
+			elif api:
+				try:
+					refreshed = await api.call_message(
+						"ferum_custom.api.telegram_bot.list_projects",
+						{"chat_id": message.chat.id},
+						http_method="GET",
+					)
+					if refreshed and 0 <= selected_index < len(refreshed):
+						row = refreshed[selected_index]
+				except Exception:
+					row = None
+			if row:
+				selected_project = str(row.get("name") or "").strip() or None
+				selected_label = _project_label(row)
+
+		if not selected_project:
 			await query.answer()
+			await state.clear()
+			await message.answer("Сессия выбора проекта устарела. Запусти /my_requests заново.", reply_markup=_main_menu())
 			return
-		if idx < 0 or idx >= len(projects):
-			await query.answer()
-			return
-		project = str(projects[idx].get("name") or "")
-		project_label = _project_label(projects[idx])
-		if not project:
-			await query.answer()
-			return
+		project_label = selected_label or selected_project
+
 		await query.answer()
 		await state.clear()
 		if not api:
@@ -933,14 +968,14 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			return
 		try:
 			try:
-				await _set_active_project(int(message.chat.id), project)
+				await _set_active_project(int(message.chat.id), selected_project)
 			except Exception:
 				# Best-effort: if ERP temporarily fails, still return list.
 				pass
 
 			rows = await api.call_message(
 				"ferum_custom.api.telegram_bot.list_requests",
-				{"chat_id": message.chat.id, "project": project, "limit": 10},
+				{"chat_id": message.chat.id, "project": selected_project, "limit": 10},
 				http_method="GET",
 			)
 			if not rows:
@@ -1035,24 +1070,61 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		message = getattr(query, "message", None)
 		if not message or not _chat_allowed(message):
 			return
-		if await state.get_state() != _PickProject.pick.state:
-			await query.answer()
-			return
+		raw = str(query.data or "")
+		parts = raw.split(":")
+		cb_action: str | None = None
+		cb_project: str | None = None
+		cb_index: int | None = None
+		if len(parts) >= 3:
+			cb_action = str(parts[1] or "").strip() or None
+			cb_project = ":".join(parts[2:]).strip() or None
+		elif len(parts) == 2:
+			try:
+				cb_index = int(str(parts[1]).strip())
+			except Exception:
+				cb_index = None
+
 		data = await state.get_data()
 		projects = data.get("projects") or []
-		action = str(data.get("pick_action") or "")
-		try:
-			idx = int(str(query.data).split(":", 1)[1])
-		except Exception:
-			await query.answer()
-			return
-		if idx < 0 or idx >= len(projects):
-			await query.answer()
-			return
-		project = str(projects[idx].get("name") or "")
-		project_label = _project_label(projects[idx])
+
+		action = cb_action or str(data.get("pick_action") or "").strip()
+		if not action:
+			# Best-effort for legacy callbacks without action encoded.
+			text = str(getattr(message, "text", "") or "").lower()
+			if "отпис" in text:
+				action = "unsubscribe"
+			elif "подпис" in text:
+				action = "subscribe"
+
+		row: dict | None = None
+		project: str | None = None
+		project_label: str | None = None
+		if cb_project:
+			project = cb_project
+			row = next((r for r in projects if str(r.get("name") or "").strip() == project), None)
+			project_label = _project_label(row) if row else project
+		elif cb_index is not None:
+			if 0 <= cb_index < len(projects):
+				row = projects[cb_index]
+			elif api:
+				try:
+					refreshed = await api.call_message(
+						"ferum_custom.api.telegram_bot.list_projects",
+						{"chat_id": message.chat.id},
+						http_method="GET",
+					)
+					if refreshed and 0 <= cb_index < len(refreshed):
+						row = refreshed[cb_index]
+				except Exception:
+					row = None
+			if row:
+				project = str(row.get("name") or "").strip() or None
+				project_label = _project_label(row)
+
 		if not project:
 			await query.answer()
+			await state.clear()
+			await message.answer("Сессия выбора проекта устарела. Запусти /projects заново.", reply_markup=_main_menu())
 			return
 
 		await query.answer()
@@ -1071,7 +1143,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 					await _set_active_project(int(message.chat.id), project)
 				except Exception:
 					pass
-				await message.answer(f"Подписка на проект {project_label}: OK", reply_markup=_main_menu())
+				await message.answer(f"Подписка на проект {project_label or project}: OK", reply_markup=_main_menu())
 				return
 			if action == "unsubscribe":
 				await api.call_message(
@@ -1083,11 +1155,13 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 					await _set_active_project(int(message.chat.id), project)
 				except Exception:
 					pass
-				await message.answer(f"Подписка на проект {project_label}: отключена", reply_markup=_main_menu())
+				await message.answer(
+					f"Подписка на проект {project_label or project}: отключена", reply_markup=_main_menu()
+				)
 				return
 			# Default action: store active project on ERP side.
 			await _set_active_project(int(message.chat.id), project)
-			await message.answer(f"Активный проект: {project_label}", reply_markup=_main_menu())
+			await message.answer(f"Активный проект: {project_label or project}", reply_markup=_main_menu())
 		except FrappeAPIError as e:
 			await message.answer(f"Операция не выполнена: {e.status_code}: {e.message}", reply_markup=_main_menu())
 		except Exception:
@@ -1160,72 +1234,129 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		message = getattr(query, "message", None)
 		if not message or not _chat_allowed(message):
 			return
+		raw = str(query.data or "")
+		payload = raw.split(":", 1)[1] if ":" in raw else ""
+		selected_project: str | None = None
+		selected_label: str | None = None
+		selected_index: int | None = None
+		if payload.strip().isdigit():
+			try:
+				selected_index = int(payload.strip())
+			except Exception:
+				selected_index = None
+		else:
+			selected_project = payload.strip() or None
+
 		data = await state.get_data()
 		projects = data.get("projects") or []
-		try:
-			idx = int(str(query.data).split(":", 1)[1])
-		except Exception:
+		row: dict | None = None
+		if selected_project:
+			row = next((r for r in projects if str(r.get("name") or "").strip() == selected_project), None)
+		elif selected_index is not None:
+			if 0 <= selected_index < len(projects):
+				row = projects[selected_index]
+			elif api:
+				try:
+					refreshed = await api.call_message(
+						"ferum_custom.api.telegram_bot.list_projects",
+						{"chat_id": message.chat.id},
+						http_method="GET",
+					)
+					if refreshed and 0 <= selected_index < len(refreshed):
+						row = refreshed[selected_index]
+				except Exception:
+					row = None
+			if row:
+				selected_project = str(row.get("name") or "").strip() or None
+
+		if row:
+			selected_label = str(row.get("project_name") or selected_project or "").strip() or None
+
+		if not selected_project:
 			await query.answer()
+			await state.clear()
+			await message.answer("Сессия выбора проекта устарела. Запусти /new_request заново.", reply_markup=_main_menu())
 			return
-		if idx < 0 or idx >= len(projects):
-			await query.answer()
-			return
-		project = str(projects[idx].get("name") or "")
-		project_label = str(projects[idx].get("project_name") or project)
-		if not project:
-			await query.answer()
-			return
+
 		if api:
 			try:
-				await _set_active_project(int(message.chat.id), project)
+				await _set_active_project(int(message.chat.id), selected_project)
 			except Exception:
 				# Best-effort: do not block request creation if saving active project fails.
 				pass
-		await state.update_data(project=project, project_label=project_label)
+		await state.update_data(project=selected_project, project_label=selected_label or selected_project)
 		await query.answer()
-		await _choose_object(message, state, project)
+		await _choose_object(message, state, selected_project)
 
 	@router.callback_query(F.data.startswith("sv_proj:"))
 	async def sv_project_selected(query, state: FSMContext) -> None:
 		message = getattr(query, "message", None)
 		if not message or not _chat_allowed(message):
 			return
-		data = await state.get_data()
-		try:
-			idx = int(str(query.data).split(":", 1)[1])
-		except Exception:
-			await query.answer()
-			return
-		assert api is not None
-		projects = data.get("projects") or []
-		if idx < 0 or idx >= len(projects):
+		raw = str(query.data or "")
+		payload = raw.split(":", 1)[1] if ":" in raw else ""
+		selected_project: str | None = None
+		selected_label: str | None = None
+		selected_index: int | None = None
+		if payload.strip().isdigit():
 			try:
-				projects = await api.call_message(
-					"ferum_custom.api.telegram_bot.list_projects",
-					{"chat_id": message.chat.id},
-					http_method="GET",
-				)
-				projects = projects or []
+				selected_index = int(payload.strip())
 			except Exception:
-				projects = []
-		if idx < 0 or idx >= len(projects):
+				selected_index = None
+		else:
+			selected_project = payload.strip() or None
+
+		data = await state.get_data()
+		projects = data.get("projects") or []
+		row: dict | None = None
+		if selected_project:
+			row = next((r for r in projects if str(r.get("name") or "").strip() == selected_project), None)
+			if not row and api:
+				try:
+					refreshed = await api.call_message(
+						"ferum_custom.api.telegram_bot.list_projects",
+						{"chat_id": message.chat.id},
+						http_method="GET",
+					)
+					row = next(
+						(r for r in (refreshed or []) if str(r.get("name") or "").strip() == selected_project),
+						None,
+					)
+				except Exception:
+					row = None
+		elif selected_index is not None:
+			if 0 <= selected_index < len(projects):
+				row = projects[selected_index]
+			elif api:
+				try:
+					refreshed = await api.call_message(
+						"ferum_custom.api.telegram_bot.list_projects",
+						{"chat_id": message.chat.id},
+						http_method="GET",
+					)
+					if refreshed and 0 <= selected_index < len(refreshed):
+						row = refreshed[selected_index]
+				except Exception:
+					row = None
+
+		if row:
+			selected_project = str(row.get("name") or "").strip() or None
+			selected_label = str(row.get("project_name") or selected_project or "").strip() or None
+
+		if not selected_project:
 			await query.answer()
 			await state.clear()
 			await message.answer("Сессия выбора проекта устарела. Запусти /survey заново.", reply_markup=_main_menu())
 			return
-		project = str((projects[idx] or {}).get("name") or "")
-		project_label = str((projects[idx] or {}).get("project_name") or project)
-		if not project:
-			await query.answer()
-			return
+
 		if api:
 			try:
-				await _set_active_project(int(message.chat.id), project)
+				await _set_active_project(int(message.chat.id), selected_project)
 			except Exception:
 				pass
-		await state.update_data(project=project, project_label=project_label)
+		await state.update_data(project=selected_project, project_label=selected_label or selected_project)
 		await query.answer()
-		await _choose_object_for_survey(message, state, project)
+		await _choose_object_for_survey(message, state, selected_project)
 
 	@router.callback_query(F.data.startswith("sv_obj:"))
 	async def sv_object_selected(query, state: FSMContext) -> None:
@@ -1434,14 +1565,38 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		if not message or not _chat_allowed(message):
 			return
 		data = await state.get_data()
-		objects = data.get("objects") or []
 		try:
 			idx = int(str(query.data).split(":", 1)[1])
 		except Exception:
 			await query.answer()
 			return
+
+		project = str(data.get("project") or "").strip()
+		if not project:
+			active_payload = await _get_active_project(int(message.chat.id))
+			project = str(active_payload.get("project") or "").strip()
+		if not project:
+			await query.answer()
+			await state.clear()
+			await message.answer("Сначала выбери проект: /new_request", reply_markup=_main_menu())
+			return
+
+		objects = data.get("objects") or []
+		if idx < 0 or idx >= len(objects):
+			assert api is not None
+			try:
+				objects = await api.call_message(
+					"ferum_custom.api.telegram_bot.list_objects",
+					{"chat_id": message.chat.id, "project": project},
+					http_method="GET",
+				)
+				objects = objects or []
+			except Exception:
+				objects = []
 		if idx < 0 or idx >= len(objects):
 			await query.answer()
+			await state.clear()
+			await message.answer("Сессия выбора объекта устарела. Запусти /new_request заново.", reply_markup=_main_menu())
 			return
 		service_object = str(objects[idx].get("name") or "")
 		service_object_label = str(objects[idx].get("object_name") or service_object)

@@ -49,3 +49,5 @@ ferum_custom.patches.v15_9.cleanup_service_request_custom_fields
 ferum_custom.patches.v15_9.hide_unused_project_fields_p0
 ferum_custom.patches.v15_9.add_project_documents_file_meta
 ferum_custom.patches.v15_9.add_project_documents_ui
+ferum_custom.patches.v15_9.update_project_documents_ui_contract_upload
+ferum_custom.patches.v15_9.update_file_doc_type_options_project_documents

@@ -175,6 +175,10 @@ doc_events = {
 		"after_insert": "ferum_custom.notifications.notify_new_invoice",
 		"on_update": "ferum_custom.notifications.notify_invoice_status_change"
 	}
+	,
+	"File": {
+		"validate": "ferum_custom.services.project_documents.validate_project_document_file",
+	},
 }
 
 # Scheduled Tasks

@@ -1,0 +1,63 @@
+name: Security
+
+env:
+  PYTHON_VERSION: '3.12'
+  SEMGREP_VERSION: '1.147.0'
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Read Semgrep rules ref
+        id: rules
+        run: |
+          REF="$(cat .github/semgrep-rules.version | tr -d '[:space:]')"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout frappe/semgrep-rules
+        uses: actions/checkout@v4
+        with:
+          repository: frappe/semgrep-rules
+          ref: ${{ steps.rules.outputs.ref }}
+          path: frappe-semgrep-rules
+
+      - name: Install semgrep
+        run: python -m pip install "semgrep==${{ env.SEMGREP_VERSION }}"
+
+      - name: Run semgrep (Frappe rules)
+        run: |
+          semgrep scan \
+            --config frappe-semgrep-rules/rules \
+            --error \
+            --timeout 120 \
+            --jobs 4 \
+            --exclude node_modules \
+            --exclude ferum_custom/public/dist \
+            --exclude build \
+            --exclude dist
+

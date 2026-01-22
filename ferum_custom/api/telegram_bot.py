@@ -1008,7 +1008,7 @@ def upload_survey_evidence(
 
 	# Ensure Drive folders exist (idempotent).
 	try:
-		from ferum_custom.api.project_drive import ensure_drive_folders  # noqa: PLC0415
+		from ferum_custom.api.project_drive import ensure_drive_folders
 
 		ensure_drive_folders(project)
 	except Exception:
@@ -1047,14 +1047,20 @@ def upload_survey_evidence(
 			frappe.log_error(title="Ferum: Telegram file download failed", message=_safe_requests_error_summary(e))
 			raise frappe.ValidationError(_("Не удалось скачать файл из Telegram. Попробуйте отправить файл ещё раз.")) from None
 
-		from ferum_custom.integrations.google_drive_folders import (  # noqa: PLC0415
+		from ferum_custom.integrations.google_drive_folders import (
 			ensure_folder,
 			get_drive_service,
 			upload_file,
 		)
 
 		service = get_drive_service()
-		section_folder = ensure_folder(service, name=f"Обследование — {section}", parent_id=site_folder_id)
+		survey_root = ensure_folder(service, name="01_ОБСЛЕДОВАНИЕ", parent_id=site_folder_id)
+		try:
+			idx = _DEFAULT_SURVEY_SECTIONS.index(section) + 1
+			section_folder_name = f"{idx:02d}_{_safe_filename(section)}"
+		except Exception:
+			section_folder_name = f"99_{_safe_filename(section)}"
+		section_folder = ensure_folder(service, name=section_folder_name[:120], parent_id=survey_root.id)
 		file_name = base_name if base_name.lower().endswith(suffix.lower()) else f"{base_name}{suffix}"
 		drive_file = upload_file(service, local_path=tmp_path, parent_id=section_folder.id, name=file_name)
 
@@ -1230,7 +1236,7 @@ def upload_service_request_attachment(
 
 	# Ensure Drive folders exist (idempotent).
 	try:
-		from ferum_custom.api.project_drive import ensure_drive_folders  # noqa: PLC0415
+		from ferum_custom.api.project_drive import ensure_drive_folders
 
 		ensure_drive_folders(project)
 	except Exception:
@@ -1272,15 +1278,15 @@ def upload_service_request_attachment(
 			frappe.log_error(title="Ferum: Telegram file download failed", message=_safe_requests_error_summary(e))
 			raise frappe.ValidationError(_("Не удалось скачать файл из Telegram. Попробуйте отправить файл ещё раз.")) from None
 
-		from ferum_custom.integrations.google_drive_folders import (  # noqa: PLC0415
+		from ferum_custom.integrations.google_drive_folders import (
 			ensure_folder,
 			get_drive_service,
 			upload_file,
 		)
 
 		service = get_drive_service()
-		requests_folder = ensure_folder(service, name="Заявки", parent_id=site_folder_id)
-		req_folder = ensure_folder(service, name=service_request, parent_id=requests_folder.id)
+		requests_root = ensure_folder(service, name="02_ЗАЯВКИ", parent_id=site_folder_id)
+		req_folder = ensure_folder(service, name=service_request, parent_id=requests_root.id)
 		file_name = base_name if base_name.lower().endswith(suffix.lower()) else f"{base_name}{suffix}"
 		drive_file = upload_file(service, local_path=tmp_path, parent_id=req_folder.id, name=file_name)
 
