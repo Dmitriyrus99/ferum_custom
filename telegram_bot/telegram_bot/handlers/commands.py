@@ -107,6 +107,28 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			base = f"{base} [{status}]"
 		return base[:50] or name[:50] or "—"
 
+	def _project_callback(prefix: str, project: str | None, idx: int) -> str:
+		if project:
+			return f"{prefix}:id:{project}"
+		return f"{prefix}:idx:{idx}"
+
+	def _parse_project_callback(payload: str) -> tuple[str | None, int | None]:
+		payload = payload.strip()
+		if payload.startswith("id:"):
+			value = payload[3:].strip()
+			return (value or None, None)
+		if payload.startswith("idx:"):
+			try:
+				return (None, int(payload[4:].strip()))
+			except Exception:
+				return (None, None)
+		if payload.isdigit():
+			try:
+				return (None, int(payload))
+			except Exception:
+				return (None, None)
+		return (payload or None, None)
+
 	def _main_menu() -> ReplyKeyboardMarkup:
 		return ReplyKeyboardMarkup(
 			keyboard=[
@@ -254,18 +276,28 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		builder = InlineKeyboardBuilder()
 		for idx, row in enumerate(projects[:20]):
 			project = str(row.get("name") or "").strip()
-			builder.button(text=_project_label(row), callback_data=f"nr_proj:{project or idx}")
+			builder.button(text=_project_label(row), callback_data=_project_callback("nr_proj", project or None, idx))
 		builder.adjust(1)
 		await state.set_state(_NewRequest.project)
 		await message.answer(prompt, reply_markup=builder.as_markup())
 
 	async def _choose_object(message: Message, state: FSMContext, project: str) -> None:
 		assert api is not None
-		objects = await api.call_message(
-			"ferum_custom.api.telegram_bot.list_objects",
-			{"chat_id": message.chat.id, "project": project},
-			http_method="GET",
-		)
+		try:
+			objects = await api.call_message(
+				"ferum_custom.api.telegram_bot.list_objects",
+				{"chat_id": message.chat.id, "project": project},
+				http_method="GET",
+			)
+		except FrappeAPIError as e:
+			await state.clear()
+			await message.answer(f"Не удалось получить список объектов: {e.status_code}: {e.message}", reply_markup=_main_menu())
+			return
+		except Exception:
+			logger.exception("Failed to fetch project objects")
+			await state.clear()
+			await message.answer("Не удалось получить список объектов (см. логи).", reply_markup=_main_menu())
+			return
 		if not objects:
 			await state.clear()
 			await message.answer(
@@ -297,7 +329,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		builder = InlineKeyboardBuilder()
 		for idx, row in enumerate(projects[:20]):
 			project = str(row.get("name") or "").strip()
-			builder.button(text=_project_label(row), callback_data=f"sv_proj:{project or idx}")
+			builder.button(text=_project_label(row), callback_data=_project_callback("sv_proj", project or None, idx))
 		builder.button(text="Отмена", callback_data="sv_cancel")
 		builder.adjust(1)
 		await state.set_state(_Survey.project)
@@ -305,11 +337,24 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 
 	async def _choose_object_for_survey(message: Message, state: FSMContext, project: str) -> None:
 		assert api is not None
-		objects = await api.call_message(
-			"ferum_custom.api.telegram_bot.list_objects",
-			{"chat_id": message.chat.id, "project": project},
-			http_method="GET",
-		)
+		try:
+			objects = await api.call_message(
+				"ferum_custom.api.telegram_bot.list_objects",
+				{"chat_id": message.chat.id, "project": project},
+				http_method="GET",
+			)
+		except FrappeAPIError as e:
+			await state.clear()
+			await message.answer(
+				f"Не удалось получить список объектов: {e.status_code}: {e.message}",
+				reply_markup=_main_menu(),
+			)
+			return
+		except Exception:
+			logger.exception("Failed to fetch project objects for survey")
+			await state.clear()
+			await message.answer("Не удалось получить список объектов (см. логи).", reply_markup=_main_menu())
+			return
 		if not objects:
 			await state.clear()
 			await message.answer(
@@ -888,7 +933,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			builder = InlineKeyboardBuilder()
 			for idx, row in enumerate(projects[:20]):
 				project = str(row.get("name") or "").strip()
-				builder.button(text=_project_label(row), callback_data=f"mr_proj:{project or idx}")
+				builder.button(text=_project_label(row), callback_data=_project_callback("mr_proj", project or None, idx))
 			builder.adjust(1)
 			await state.set_state(_MyRequestsPick.project)
 			await message.answer("Выбери проект для списка заявок:", reply_markup=builder.as_markup())
@@ -918,16 +963,8 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			return
 		raw = str(query.data or "")
 		payload = raw.split(":", 1)[1] if ":" in raw else ""
-		selected_project: str | None = None
+		selected_project, selected_index = _parse_project_callback(payload)
 		selected_label: str | None = None
-		selected_index: int | None = None
-		if payload.strip().isdigit():
-			try:
-				selected_index = int(payload.strip())
-			except Exception:
-				selected_index = None
-		else:
-			selected_project = payload.strip() or None
 
 		data = await state.get_data()
 		projects = data.get("projects") or []
@@ -1236,16 +1273,8 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			return
 		raw = str(query.data or "")
 		payload = raw.split(":", 1)[1] if ":" in raw else ""
-		selected_project: str | None = None
+		selected_project, selected_index = _parse_project_callback(payload)
 		selected_label: str | None = None
-		selected_index: int | None = None
-		if payload.strip().isdigit():
-			try:
-				selected_index = int(payload.strip())
-			except Exception:
-				selected_index = None
-		else:
-			selected_project = payload.strip() or None
 
 		data = await state.get_data()
 		projects = data.get("projects") or []
@@ -1295,16 +1324,8 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			return
 		raw = str(query.data or "")
 		payload = raw.split(":", 1)[1] if ":" in raw else ""
-		selected_project: str | None = None
+		selected_project, selected_index = _parse_project_callback(payload)
 		selected_label: str | None = None
-		selected_index: int | None = None
-		if payload.strip().isdigit():
-			try:
-				selected_index = int(payload.strip())
-			except Exception:
-				selected_index = None
-		else:
-			selected_project = payload.strip() or None
 
 		data = await state.get_data()
 		projects = data.get("projects") or []
