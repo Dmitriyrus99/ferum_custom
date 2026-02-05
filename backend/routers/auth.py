@@ -3,7 +3,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from frappeclient import FrappeClient
 from passlib.context import CryptContext
 
 from ..auth import (  # Keep create_access_token and get_current_user from auth.py
@@ -14,9 +13,6 @@ from ..config import settings
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Initialize FrappeClient for authentication
-frappe_client = FrappeClient(settings.ERP_API_URL, settings.ERP_API_KEY, settings.ERP_API_SECRET)
 
 
 class UserInDB:

@@ -1,17 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from frappeclient import FrappeClient
 
 from ..auth import get_current_user, has_role
-from ..config import settings
+from ..frappe_client import get_frappe_client
 
 router = APIRouter()
-
-# Initialize FrappeClient
-frappe_client = FrappeClient(settings.ERP_API_URL, settings.ERP_API_KEY, settings.ERP_API_SECRET)
 
 
 @router.get("/projects")
 async def get_projects(current_user: dict = Depends(get_current_user)):
+	frappe_client = get_frappe_client()
 	filters = {}
 	user_roles = current_user.get("roles", [])
 
@@ -55,6 +52,7 @@ async def get_projects(current_user: dict = Depends(get_current_user)):
 
 @router.get("/projects/{project_name}")
 async def get_project(project_name: str, current_user: dict = Depends(get_current_user)):
+	frappe_client = get_frappe_client()
 	user_roles = current_user.get("roles", [])
 
 	try:
@@ -97,6 +95,7 @@ async def create_project(
 	project_data: dict,
 	current_user: str = Depends(has_role(["Project Manager", "Administrator"])),
 ):
+	frappe_client = get_frappe_client()
 	try:
 		new_project = frappe_client.insert("ServiceProject", project_data)
 		return {"message": "Project created successfully", "project": new_project}
@@ -110,6 +109,7 @@ async def update_project(
 	project_data: dict,
 	current_user: str = Depends(has_role(["Project Manager", "Administrator"])),
 ):
+	frappe_client = get_frappe_client()
 	try:
 		updated_project = frappe_client.update("ServiceProject", project_name, project_data)
 		return {"message": "Project updated successfully", "project": updated_project}

@@ -1,17 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from frappeclient import FrappeClient
 
 from ..auth import get_current_user, has_role
-from ..config import settings
+from ..frappe_client import get_frappe_client
 
 router = APIRouter()
-
-# Initialize FrappeClient
-frappe_client = FrappeClient(settings.ERP_API_URL, settings.ERP_API_KEY, settings.ERP_API_SECRET)
 
 
 @router.get("/reports")
 async def get_reports(current_user: dict = Depends(get_current_user)):
+	frappe_client = get_frappe_client()
 	filters: dict[str, object] = {}
 	user_roles = current_user.get("roles", [])
 
@@ -66,6 +63,7 @@ async def get_reports(current_user: dict = Depends(get_current_user)):
 
 @router.get("/reports/{report_name}")
 async def get_report(report_name: str, current_user: dict = Depends(get_current_user)):
+	frappe_client = get_frappe_client()
 	user_roles = current_user.get("roles", [])
 
 	try:
@@ -113,6 +111,7 @@ async def create_report(
 	report_data: dict,
 	current_user: str = Depends(has_role(["Project Manager", "Administrator", "Engineer"])),
 ):
+	frappe_client = get_frappe_client()
 	try:
 		new_report = frappe_client.insert("ServiceReport", report_data)
 		return {"message": "Service Report created successfully", "report": new_report}

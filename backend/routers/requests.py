@@ -1,17 +1,14 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from frappeclient import FrappeClient
 
 from ..auth import get_current_user, has_role
-from ..config import settings
+from ..frappe_client import get_frappe_client
 
 router = APIRouter()
-
-# Initialize FrappeClient
-frappe_client = FrappeClient(settings.ERP_API_URL, settings.ERP_API_KEY, settings.ERP_API_SECRET)
 
 
 @router.get("/requests")
 async def get_requests(current_user: dict = Depends(get_current_user)):
+	frappe_client = get_frappe_client()
 	filters: dict[str, object] = {}
 	user_roles = current_user.get("roles", [])
 	user_name = current_user.get("name")
@@ -55,6 +52,7 @@ async def get_requests(current_user: dict = Depends(get_current_user)):
 
 @router.get("/requests/{request_name}")
 async def get_request(request_name: str, current_user: dict = Depends(get_current_user)):
+	frappe_client = get_frappe_client()
 	user_roles = current_user.get("roles", [])
 	user_name = current_user.get("name")
 
@@ -102,6 +100,7 @@ async def create_request(
 	request_data: dict,
 	current_user: str = Depends(has_role(["Project Manager", "Administrator", "Office Manager", "Client"])),
 ):
+	frappe_client = get_frappe_client()
 	try:
 		new_request = frappe_client.insert("ServiceRequest", request_data)
 		return {
@@ -120,6 +119,7 @@ async def update_request_status(
 		has_role(["Project Manager", "Administrator", "Engineer", "Department Head"])
 	),
 ):
+	frappe_client = get_frappe_client()
 	try:
 		# This endpoint would enforce workflow rules defined in ERPNext
 		updated_request = frappe_client.set_value(
@@ -139,6 +139,7 @@ async def upload_request_attachment(
 	file: UploadFile = File(...),
 	current_user: str = Depends(has_role(["Project Manager", "Administrator", "Engineer", "Office Manager"])),
 ):
+	frappe_client = get_frappe_client()
 	try:
 		# Create a CustomAttachment DocType in ERPNext
 		# The actual file content will be handled by CustomAttachment's before_insert hook (Google Drive integration)

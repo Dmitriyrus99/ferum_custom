@@ -1,17 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from frappeclient import FrappeClient
 
 from ..auth import get_current_user, has_role
-from ..config import settings
+from ..frappe_client import get_frappe_client
 
 router = APIRouter()
-
-# Initialize FrappeClient
-frappe_client = FrappeClient(settings.ERP_API_URL, settings.ERP_API_KEY, settings.ERP_API_SECRET)
 
 
 @router.get("/invoices")
 async def get_invoices(current_user: dict = Depends(get_current_user)):
+	frappe_client = get_frappe_client()
 	filters = {}
 	user_roles = current_user.get("roles", [])
 
@@ -57,6 +54,7 @@ async def get_invoices(current_user: dict = Depends(get_current_user)):
 
 @router.get("/invoices/{invoice_name}")
 async def get_invoice(invoice_name: str, current_user: dict = Depends(get_current_user)):
+	frappe_client = get_frappe_client()
 	user_roles = current_user.get("roles", [])
 
 	try:
@@ -104,6 +102,7 @@ async def create_invoice(
 	invoice_data: dict,
 	current_user: str = Depends(has_role(["Project Manager", "Administrator", "Office Manager"])),
 ):
+	frappe_client = get_frappe_client()
 	try:
 		new_invoice = frappe_client.insert("Invoice", invoice_data)
 		return {"message": "Invoice created successfully", "invoice": new_invoice}
@@ -117,6 +116,7 @@ async def update_invoice_status(
 	status_data: dict,
 	current_user: str = Depends(has_role(["Administrator", "Accountant"])),
 ):
+	frappe_client = get_frappe_client()
 	try:
 		updated_invoice = frappe_client.set_value(
 			"Invoice", invoice_name, {"status": status_data.get("status")}

@@ -2,17 +2,14 @@ from datetime import datetime, timedelta
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from frappeclient import FrappeClient  # Import FrappeClient
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from .config import settings
+from .frappe_client import ErpCredentialsMissingError, get_frappe_client
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Initialize FrappeClient for use in role checking
-frappe_client = FrappeClient(settings.ERP_API_URL, settings.ERP_API_KEY, settings.ERP_API_SECRET)
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
@@ -46,6 +43,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 	username = verify_token(token, credentials_exception)
 
 	try:
+		frappe_client = get_frappe_client()
 		user_doc = frappe_client.get_doc("User", username)
 		user_roles = [role.role for role in user_doc.roles]
 
@@ -61,6 +59,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 			user_data["customer_id"] = user_doc.get("custom_customer_id")
 
 		return user_data
+	except ErpCredentialsMissingError as e:
+		raise HTTPException(
+			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+			detail=str(e),
+		)
 	except Exception as e:
 		raise HTTPException(
 			status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
