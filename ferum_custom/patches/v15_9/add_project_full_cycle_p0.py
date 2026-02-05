@@ -47,22 +47,42 @@ def _create_project_fields() -> None:
 			"insert_after": "status",
 			"reqd": 1,
 		},
-		{"fieldname": "ferum_p0_tab", "label": "Ferum P0", "fieldtype": "Tab Break", "insert_after": "ferum_stage"},
-		{"fieldname": "tender_section", "label": "Tender", "fieldtype": "Section Break", "insert_after": "ferum_p0_tab"},
+		{
+			"fieldname": "ferum_p0_tab",
+			"label": "Ferum P0",
+			"fieldtype": "Tab Break",
+			"insert_after": "ferum_stage",
+		},
+		{
+			"fieldname": "tender_section",
+			"label": "Tender",
+			"fieldtype": "Section Break",
+			"insert_after": "ferum_p0_tab",
+		},
 		{
 			"fieldname": "tender_source",
 			"label": "Tender Source",
 			"fieldtype": "Data",
 			"insert_after": "tender_section",
 		},
-		{"fieldname": "eis_etp_url", "label": "EIS/ETP URL", "fieldtype": "Data", "insert_after": "tender_source"},
+		{
+			"fieldname": "eis_etp_url",
+			"label": "EIS/ETP URL",
+			"fieldtype": "Data",
+			"insert_after": "tender_source",
+		},
 		{
 			"fieldname": "tender_customer_name",
 			"label": "Tender Customer Name",
 			"fieldtype": "Data",
 			"insert_after": "eis_etp_url",
 		},
-		{"fieldname": "tender_price", "label": "Tender Price", "fieldtype": "Currency", "insert_after": "tender_customer_name"},
+		{
+			"fieldname": "tender_price",
+			"label": "Tender Price",
+			"fieldtype": "Currency",
+			"insert_after": "tender_customer_name",
+		},
 		{
 			"fieldname": "tender_term_start",
 			"label": "Tender Term Start",
@@ -412,4 +432,3 @@ def execute() -> None:
 
 	_create_project_fields()
 	frappe.clear_cache()
-

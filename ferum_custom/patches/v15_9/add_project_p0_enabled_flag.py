@@ -47,4 +47,3 @@ def execute() -> None:
 		frappe.db.set_value("Custom Field", cf_name, "label", "Процесс P0 активен", update_modified=False)
 
 	frappe.clear_cache()
-

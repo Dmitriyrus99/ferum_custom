@@ -41,4 +41,3 @@ def execute() -> None:
 	"""
 	_convert("Invoices by Project", ref_doctype="Invoice")
 	_convert("Service Requests by Project", ref_doctype="Service Request")
-

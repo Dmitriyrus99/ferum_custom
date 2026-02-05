@@ -10,7 +10,13 @@ from frappe import _
 from frappe.utils import now_datetime
 
 from ferum_custom.api.project_drive import ensure_drive_folders
-from ferum_custom.integrations.google_drive_folders import ensure_folder, get_drive_service, upload_file
+from ferum_custom.integrations.google_drive_folders import (
+	ensure_folder,
+	find_folder,
+	get_drive_service,
+	update_drive_file,
+	upload_file,
+)
 from ferum_custom.security.project_access import user_has_project_access
 from ferum_custom.services.contract_project_sync import get_project_for_contract
 from ferum_custom.services.project_documents_config import (
@@ -73,7 +79,7 @@ def _doc_type_folder_segments(*, doc_type: str, contract: str | None) -> list[st
 	year_month = now.strftime("%Y-%m")
 
 	if doc_type == DOC_TYPES[0]:  # Customer contracts
-		contract_key = _contract_folder_key(contract or "") or "_NO_CONTRACT"
+		contract_key = _contract_folder_key(contract or "") or "_БЕЗ_КОНТРАКТА"
 		return ["01_ДОГОВОРЫ_ЗАКАЗЧИК", contract_key]
 	if doc_type == DOC_TYPES[1]:  # Contractors
 		return ["02_ДОГОВОРЫ_ПОДРЯДЧИКИ"]
@@ -191,6 +197,14 @@ def upload_project_document() -> dict:
 	folder_id = parent_id
 	for segment in _doc_type_folder_segments(doc_type=doc_type, contract=contract):
 		seg = _safe_filename(segment)[:120]
+		if seg == "_БЕЗ_КОНТРАКТА":
+			# Migrate legacy placeholder folder name if present.
+			try:
+				legacy = find_folder(service, name="_NO_CONTRACT", parent_id=folder_id)
+				if legacy:
+					update_drive_file(service, file_id=legacy.id, body={"name": seg})
+			except Exception:
+				pass
 		folder_id = ensure_folder(service, name=seg, parent_id=folder_id).id
 
 	tmp_path = None

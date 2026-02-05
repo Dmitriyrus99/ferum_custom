@@ -61,4 +61,3 @@ def validate_project_document_file(doc: Document, method: str | None = None) -> 
 				_("Contract {0} is not linked to Project {1}.").format(contract, project),
 				frappe.ValidationError,
 			)
-

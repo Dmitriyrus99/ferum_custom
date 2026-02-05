@@ -62,4 +62,3 @@ docker compose restart backend
 ```
 
 For more detailed information and troubleshooting tips see [RUN.md](RUN.md).
-

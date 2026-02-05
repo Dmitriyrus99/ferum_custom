@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import frappe
 
-
 FERUM_DIRECTOR_ROLE = "Ferum Director"
 FERUM_TENDER_SPECIALIST_ROLE = "Ferum Tender Specialist"
 FERUM_OFFICE_MANAGER_ROLE = "Ferum Office Manager"

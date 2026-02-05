@@ -31,4 +31,3 @@ def execute() -> None:
 		cf.save(ignore_permissions=True)
 
 	frappe.clear_cache()
-

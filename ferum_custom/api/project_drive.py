@@ -192,8 +192,7 @@ def _friendly_drive_error(exc: Exception) -> str:
 
 	if TransportError and isinstance(exc, TransportError):  # type: ignore[arg-type]
 		return (
-			"Ошибка сети при обращении к Google Drive API. "
-			"Проверь доступ сервера к интернету/DNS и повтори."
+			"Ошибка сети при обращении к Google Drive API. Проверь доступ сервера к интернету/DNS и повтори."
 		)
 
 	# Default fallback.
@@ -251,7 +250,9 @@ def _get_or_create_project_root_folder(*, service, project_doc, root_id: str) ->
 			if str(info.get("name") or "") != desired_name:
 				body["name"] = desired_name
 
-			remove_parents = ",".join([p for p in parents if p and p != desired_parent_id]) if parents else None
+			remove_parents = (
+				",".join([p for p in parents if p and p != desired_parent_id]) if parents else None
+			)
 			add_parents = desired_parent_id if desired_parent_id not in parents else None
 
 			if body or add_parents or remove_parents:
@@ -264,12 +265,46 @@ def _get_or_create_project_root_folder(*, service, project_doc, root_id: str) ->
 				)
 
 			folder_id = str(info.get("id") or existing_id).strip()
-			web_link = str(info.get("webViewLink") or f"https://drive.google.com/drive/folders/{folder_id}").strip()
+			web_link = str(
+				info.get("webViewLink") or f"https://drive.google.com/drive/folders/{folder_id}"
+			).strip()
 			return folder_id, web_link
 
 	# No existing folder or it's not accessible/valid -> create / reuse by name under deterministic parent.
 	proj_folder = ensure_folder(service, name=desired_name, parent_id=desired_parent_id)
 	return proj_folder.id, proj_folder.web_view_link
+
+
+@frappe.whitelist()
+@frappe.read_only()
+def check_drive_config() -> dict:
+	"""Return current Google Drive integration status (for admins)."""
+	_require_drive_manager()
+
+	root_id = (root_folder_id() or "").strip()
+	if not root_id:
+		return {"ok": False, "error": _("Google Drive root folder is not configured.")}
+
+	try:
+		service = get_drive_service()
+		info = get_drive_file(service, file_id=root_id)
+		mime = str((info or {}).get("mimeType") or "").strip()
+		if mime != _FOLDER_MIME:
+			return {"ok": False, "error": _("Google Drive root id is not a folder.")}
+
+		folder_id = str((info or {}).get("id") or root_id).strip()
+		url = str(
+			(info or {}).get("webViewLink") or f"https://drive.google.com/drive/folders/{folder_id}"
+		).strip()
+		return {
+			"ok": True,
+			"root_folder_id": folder_id,
+			"root_folder_url": url,
+			"service_account_email": service_account_client_email(),
+			"service_account_project_id": service_account_project_id(),
+		}
+	except Exception as exc:
+		return {"ok": False, "error": _friendly_drive_error(exc)}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -349,7 +384,9 @@ def ensure_drive_folders(project: str) -> dict:
 			parent_id=documents_folder.id,
 		)
 		_ensure_folder_migrating_name(service, name="01_ВХОДЯЩИЕ", legacy_names=("01_IN",), parent_id=corr.id)
-		_ensure_folder_migrating_name(service, name="02_ИСХОДЯЩИЕ", legacy_names=("02_OUT",), parent_id=corr.id)
+		_ensure_folder_migrating_name(
+			service, name="02_ИСХОДЯЩИЕ", legacy_names=("02_OUT",), parent_id=corr.id
+		)
 		_ensure_folder_migrating_name(
 			service, name="03_ВНУТРЕННИЕ", legacy_names=("03_INTERNAL",), parent_id=corr.id
 		)
@@ -382,6 +419,15 @@ def ensure_drive_folders(project: str) -> dict:
 	for row in doc.get("project_sites") or []:
 		row_name = str(getattr(row, "name", "") or "").strip()
 		site_name = str(getattr(row, "site_name", "") or "").strip()
+		site_address = str(getattr(row, "address", "") or "").strip()
+		default_engineer = str(getattr(row, "default_engineer", "") or "").strip()
+		notes = str(getattr(row, "notes", "") or "").strip()
+
+		try:
+			site_idx = int(getattr(row, "idx", 0) or 0)
+		except Exception:
+			site_idx = 0
+
 		if not row_name or not site_name:
 			continue
 		try:
@@ -402,7 +448,9 @@ def ensure_drive_folders(project: str) -> dict:
 					body = {}
 					if str(info.get("name") or "") != desired_site_name:
 						body["name"] = desired_site_name
-					remove_parents = ",".join([p for p in parents if p and p != objects_folder.id]) if parents else None
+					remove_parents = (
+						",".join([p for p in parents if p and p != objects_folder.id]) if parents else None
+					)
 					add_parents = objects_folder.id if objects_folder.id not in parents else None
 					if body or add_parents or remove_parents:
 						info = update_drive_file(
@@ -414,7 +462,9 @@ def ensure_drive_folders(project: str) -> dict:
 						)
 
 					folder_id = str(info.get("id") or existing_site_id).strip()
-					web_link = str(info.get("webViewLink") or f"https://drive.google.com/drive/folders/{folder_id}").strip()
+					web_link = str(
+						info.get("webViewLink") or f"https://drive.google.com/drive/folders/{folder_id}"
+					).strip()
 					folder = DriveFolder(id=folder_id, web_view_link=web_link)
 				else:
 					folder = ensure_folder(service, name=desired_site_name, parent_id=objects_folder.id)
@@ -428,13 +478,42 @@ def ensure_drive_folders(project: str) -> dict:
 			_ensure_folder_migrating_name(
 				service, name="02_ЗАЯВКИ", legacy_names=("02_SERVICE_REQUESTS",), parent_id=folder.id
 			)
+
+			# Optional: object metadata snapshot.
+			try:
+				obj_meta_folder = _ensure_folder_migrating_name(
+					service, name="00_МЕТА", legacy_names=("00_META",), parent_id=folder.id
+				)
+				obj_payload = {
+					"project_site": {
+						"id": row_name,
+						"idx": site_idx or None,
+						"site_name": site_name,
+						"address": site_address or None,
+						"default_engineer": default_engineer or None,
+						"notes": notes or None,
+					},
+					"project": {"id": project, "folder_url": project_folder_url},
+					"drive": {
+						"object_folder_url": folder.web_view_link,
+						"generated_at": now_datetime().isoformat(),
+						"structure_version": "ru_v1",
+					},
+				}
+				upsert_json_file(
+					service, parent_id=obj_meta_folder.id, name="object.json", payload=obj_payload
+				)
+			except Exception:
+				frappe.log_error(title="Ferum: Google Drive object.json", message=frappe.get_traceback())
 		except Exception as exc:
 			frappe.log_error(title="Ferum: Google Drive folders", message=frappe.get_traceback())
 			frappe.throw(_friendly_drive_error(exc))
 		site_results.append({"row": row_name, "site_name": site_name, "url": folder.web_view_link})
 		# Update child row without saving the whole Project doc.
 		if frappe.db.has_column("Project Site", "drive_folder_url"):
-			frappe.db.set_value("Project Site", row_name, "drive_folder_url", folder.web_view_link, update_modified=False)
+			frappe.db.set_value(
+				"Project Site", row_name, "drive_folder_url", folder.web_view_link, update_modified=False
+			)
 
 	# Best-effort: keep project metadata snapshot inside Drive.
 	try:
@@ -451,7 +530,9 @@ def ensure_drive_folders(project: str) -> dict:
 			"project": {
 				"id": str(doc.name),
 				"title": project_title or None,
-				"company": str(getattr(doc, "company", "") or "").strip() if doc.meta.has_field("company") else None,
+				"company": str(getattr(doc, "company", "") or "").strip()
+				if doc.meta.has_field("company")
+				else None,
 				"customer": customer or None,
 				"contract": contract or None,
 			},
@@ -494,7 +575,12 @@ def ensure_drive_folders_bulk(
 		filters = {}
 		if company:
 			filters["company"] = str(company).strip()
-		project_list = frappe.get_all("Project", filters=filters, pluck="name", limit=int(limit) if limit else 0)  # type: ignore[assignment]
+		limit = int(limit or 0)
+		if limit > 0:
+			project_list = frappe.get_all("Project", filters=filters, pluck="name", limit=limit)  # type: ignore[assignment]
+		else:
+			# get_all() defaults to no limit (limit_page_length=0)
+			project_list = frappe.get_all("Project", filters=filters, pluck="name")  # type: ignore[assignment]
 
 	results: list[dict] = []
 	for p in project_list:

@@ -51,3 +51,6 @@ ferum_custom.patches.v15_9.add_project_documents_file_meta
 ferum_custom.patches.v15_9.add_project_documents_ui
 ferum_custom.patches.v15_9.update_project_documents_ui_contract_upload
 ferum_custom.patches.v15_9.update_file_doc_type_options_project_documents
+ferum_custom.patches.v15_9.add_report_project_sites
+ferum_custom.patches.v15_9.fix_workspaces_objects_shortcuts_project_sites
+ferum_custom.patches.v15_9.ensure_file_home_folder

@@ -57,4 +57,3 @@ def execute() -> None:
 	_ensure_user_has_role(director_user, FERUM_DIRECTOR_ROLE)
 	_ensure_user_has_role(tender_user, FERUM_TENDER_SPECIALIST_ROLE)
 	_ensure_user_has_role(office_user, FERUM_OFFICE_MANAGER_ROLE)
-

@@ -38,7 +38,7 @@ def execute() -> None:
 		update `tabProject`
 		set ferum_p0_enabled = 0
 		where ifnull(ferum_p0_enabled, 0) = 1
-		  and ({' or '.join(where_parts)})
+		  and ({" or ".join(where_parts)})
 		"""
 	)
 	frappe.db.commit()

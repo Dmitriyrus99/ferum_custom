@@ -49,7 +49,7 @@ def execute():
 		query=(
 			"SELECT "
 			"COALESCE(assigned_to, 'Не назначено') AS \"Инженер:Data:200\", "
-			"COUNT(*) AS \"Открытых заявок:Int:100\" "
+			'COUNT(*) AS "Открытых заявок:Int:100" '
 			"FROM `tabService Request` "
 			"WHERE status IN ('Open', 'In Progress') "
 			"GROUP BY assigned_to "
@@ -63,10 +63,10 @@ def execute():
 		ref_doctype="Service Request",
 		query=(
 			"SELECT "
-			"name AS \"Заявка:Link/Service Request:150\", "
-			"status AS \"Статус:Data:120\", "
-			"priority AS \"Приоритет:Data:120\", "
-			"modified AS \"Изменен:Datetime:160\" "
+			'name AS "Заявка:Link/Service Request:150", '
+			'status AS "Статус:Data:120", '
+			'priority AS "Приоритет:Data:120", '
+			'modified AS "Изменен:Datetime:160" '
 			"FROM `tabService Request` "
 			"WHERE (assigned_to IS NULL OR assigned_to = '') "
 			"AND status IN ('Open', 'In Progress') "
@@ -80,12 +80,12 @@ def execute():
 		ref_doctype="Service Request",
 		query=(
 			"SELECT "
-			"name AS \"Заявка:Link/Service Request:150\", "
-			"project AS \"Проект:Link/Service Project:180\", "
-			"status AS \"Статус:Data:120\", "
-			"priority AS \"Приоритет:Data:120\", "
-			"assigned_to AS \"Назначено:Link/User:180\", "
-			"modified AS \"Изменен:Datetime:160\" "
+			'name AS "Заявка:Link/Service Request:150", '
+			'project AS "Проект:Link/Service Project:180", '
+			'status AS "Статус:Data:120", '
+			'priority AS "Приоритет:Data:120", '
+			'assigned_to AS "Назначено:Link/User:180", '
+			'modified AS "Изменен:Datetime:160" '
 			"FROM `tabService Request` "
 			"WHERE ("
 			"  %(project)s IS NULL OR %(project)s = '' OR project = %(project)s"
@@ -110,14 +110,14 @@ def execute():
 		ref_doctype="Invoice",
 		query=(
 			"SELECT "
-			"name AS \"Счет:Link/Invoice:150\", "
-			"project AS \"Проект:Link/Service Project:180\", "
-			"counterparty_name AS \"Контрагент:Data:180\", "
-			"counterparty_type AS \"Тип контрагента:Data:140\", "
-			"status AS \"Статус:Data:120\", "
-			"amount AS \"Сумма:Currency:120\", "
-			"invoice_date AS \"Дата счета:Date:120\", "
-			"modified AS \"Изменен:Datetime:160\" "
+			'name AS "Счет:Link/Invoice:150", '
+			'project AS "Проект:Link/Service Project:180", '
+			'counterparty_name AS "Контрагент:Data:180", '
+			'counterparty_type AS "Тип контрагента:Data:140", '
+			'status AS "Статус:Data:120", '
+			'amount AS "Сумма:Currency:120", '
+			'invoice_date AS "Дата счета:Date:120", '
+			'modified AS "Изменен:Datetime:160" '
 			"FROM `tabInvoice` "
 			"WHERE ("
 			"  %(project)s IS NULL OR %(project)s = '' OR project = %(project)s"
@@ -136,4 +136,3 @@ def execute():
 			},
 		],
 	)
-

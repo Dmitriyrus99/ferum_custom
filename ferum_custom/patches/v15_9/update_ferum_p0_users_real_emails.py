@@ -93,4 +93,3 @@ def execute() -> None:
 	# Disable demo placeholder users created by the bootstrap patch.
 	for email in ("director@example.com", "tender@example.com", "office@example.com"):
 		_disable_user(email)
-

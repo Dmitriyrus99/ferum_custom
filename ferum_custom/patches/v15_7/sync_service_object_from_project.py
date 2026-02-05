@@ -35,4 +35,3 @@ def execute():
 
 		if updates:
 			frappe.db.set_value("Service Object", o.name, updates, update_modified=False)
-

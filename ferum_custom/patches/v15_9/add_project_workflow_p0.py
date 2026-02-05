@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import frappe
+
 STAGES: list[str] = [
 	"Tender Won",
 	"Contact Established",
@@ -48,7 +49,9 @@ def _upsert_workflow() -> None:
 	# Ensure Workflow State master docs exist.
 	for state in STAGES:
 		if not frappe.db.exists("Workflow State", state):
-			ws = frappe.get_doc({"doctype": "Workflow State", "workflow_state_name": state, "style": "Primary"})
+			ws = frappe.get_doc(
+				{"doctype": "Workflow State", "workflow_state_name": state, "style": "Primary"}
+			)
 			ws.insert(ignore_permissions=True)
 
 	# Ensure workflow action exists.

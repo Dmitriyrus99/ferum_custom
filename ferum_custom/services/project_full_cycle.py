@@ -16,7 +16,6 @@ from ferum_custom.utils.role_resolution import (
 	first_enabled_user_with_roles,
 )
 
-
 STAGES: list[str] = [
 	"Tender Won",
 	"Contact Established",
@@ -118,7 +117,9 @@ def validate_project_p0_stage_gates(doc: Document, method: str | None = None) ->
 	stage = getattr(doc, "ferum_stage", None)
 
 	# Base fields for Tender Won (P0 required tender block).
-	_require(bool((getattr(doc, "eis_etp_url", None) or "").strip()), "Tender", "EIS/ETP URL is required.", errors)
+	_require(
+		bool((getattr(doc, "eis_etp_url", None) or "").strip()), "Tender", "EIS/ETP URL is required.", errors
+	)
 	_require(
 		bool((getattr(doc, "tender_customer_name", None) or "").strip()),
 		"Tender",
@@ -126,8 +127,15 @@ def validate_project_p0_stage_gates(doc: Document, method: str | None = None) ->
 		errors,
 	)
 	_require(bool(getattr(doc, "tender_price", None)), "Tender", "Tender price is required.", errors)
-	_require(bool(getattr(doc, "tender_protocol_date", None)), "Tender", "Tender protocol date is required.", errors)
-	_require(bool(getattr(doc, "tender_term_start", None)), "Tender", "Tender term start is required.", errors)
+	_require(
+		bool(getattr(doc, "tender_protocol_date", None)),
+		"Tender",
+		"Tender protocol date is required.",
+		errors,
+	)
+	_require(
+		bool(getattr(doc, "tender_term_start", None)), "Tender", "Tender term start is required.", errors
+	)
 	_require(bool(getattr(doc, "tender_term_end", None)), "Tender", "Tender term end is required.", errors)
 
 	if _at_least(stage, "Contact Established"):
@@ -164,7 +172,9 @@ def validate_project_p0_stage_gates(doc: Document, method: str | None = None) ->
 
 	if _at_least(stage, "Contractor Selected/Contracted"):
 		sub_allowed = (getattr(doc, "subcontracting_allowed", None) or "Unknown").strip()
-		_require(sub_allowed != "Unknown", "Contractor", "Subcontracting allowed must not be Unknown.", errors)
+		_require(
+			sub_allowed != "Unknown", "Contractor", "Subcontracting allowed must not be Unknown.", errors
+		)
 
 		exec_mode = (getattr(doc, "execution_mode", None) or "").strip()
 		if sub_allowed == "Forbidden":
@@ -210,7 +220,12 @@ def validate_project_p0_stage_gates(doc: Document, method: str | None = None) ->
 		)
 
 	if _at_least(stage, "Primary Survey Completed"):
-		_require(bool((getattr(doc, "drive_folder_url", None) or "").strip()), "Survey", "Drive folder URL is required.", errors)
+		_require(
+			bool((getattr(doc, "drive_folder_url", None) or "").strip()),
+			"Survey",
+			"Drive folder URL is required.",
+			errors,
+		)
 		photo_format = (getattr(doc, "photo_survey_format", None) or "").strip()
 		if photo_format == "Photo-only":
 			_require(

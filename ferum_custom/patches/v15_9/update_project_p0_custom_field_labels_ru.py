@@ -84,4 +84,3 @@ def execute() -> None:
 		_update_custom_field_label("Project", fieldname, label)
 
 	frappe.clear_cache()
-

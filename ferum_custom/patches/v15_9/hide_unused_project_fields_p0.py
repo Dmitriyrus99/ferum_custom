@@ -93,4 +93,3 @@ def execute() -> None:
 		)
 
 	frappe.clear_cache()
-

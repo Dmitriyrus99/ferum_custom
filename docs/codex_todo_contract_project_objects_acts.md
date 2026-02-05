@@ -211,4 +211,3 @@ Workflow:
 4. `validate_project_has_contract(project)` + `validate_project_unique_contract(project)`
 5. `generate_act_schedule(contract_or_project, frequency, mode)` (кнопка/API)
 6. `on_service_act_signed(service_act)` (create invoice if needed + update schedule)
-

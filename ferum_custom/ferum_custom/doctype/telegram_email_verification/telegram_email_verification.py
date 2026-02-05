@@ -5,4 +5,3 @@ from frappe.model.document import Document
 
 class TelegramEmailVerification(Document):
 	pass
-

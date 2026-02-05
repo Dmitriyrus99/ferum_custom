@@ -4,44 +4,44 @@ import frappe
 
 
 def _dt_exists(dt: str) -> bool:
-    return bool(dt and frappe.db.exists("DocType", dt))
+	return bool(dt and frappe.db.exists("DocType", dt))
 
 
 def _service_request_dt() -> str | None:
-    for dt in ("Service Request", "ServiceRequest"):
-        if _dt_exists(dt):
-            return dt
-    return None
+	for dt in ("Service Request", "ServiceRequest"):
+		if _dt_exists(dt):
+			return dt
+	return None
 
 
 def _service_schedule_dt() -> str | None:
-    for dt in ("Service Maintenance Schedule", "Maintenance Schedule", "MaintenanceSchedule"):
-        if _dt_exists(dt):
-            return dt
-    return None
+	for dt in ("Service Maintenance Schedule", "Maintenance Schedule", "MaintenanceSchedule"):
+		if _dt_exists(dt):
+			return dt
+	return None
 
 
 def _invoice_dt() -> str | None:
-    return "Invoice" if _dt_exists("Invoice") else None
+	return "Invoice" if _dt_exists("Invoice") else None
 
 
 def _has_column(dt: str, col: str) -> bool:
-    try:
-        return frappe.db.has_column(dt, col)
-    except Exception:
-        return False
+	try:
+		return frappe.db.has_column(dt, col)
+	except Exception:
+		return False
 
 
 def _backfill_contract_on_service_request(sr_dt: str) -> None:
-    if not _has_column(sr_dt, "contract") or not _has_column(sr_dt, "service_object"):
-        return
-    if not _dt_exists("ContractServiceObject"):
-        return
+	if not _has_column(sr_dt, "contract") or not _has_column(sr_dt, "service_object"):
+		return
+	if not _dt_exists("ContractServiceObject"):
+		return
 
-    table = f"`tab{sr_dt}`"
-    # Step 1: Fill contract only when exactly 1 active link exists for the service_object.
-    frappe.db.sql(
-        f"""
+	table = f"`tab{sr_dt}`"
+	# Step 1: Fill contract only when exactly 1 active link exists for the service_object.
+	frappe.db.sql(
+		f"""
         update {table} sr
         set sr.contract = (
             select min(cso.contract)
@@ -58,12 +58,12 @@ def _backfill_contract_on_service_request(sr_dt: str) -> None:
               and cso2.status = 'Active'
           ) = 1
         """
-    )
+	)
 
-    # Step 2: If multiple active contracts exist, prefer same company (when company is present).
-    if _has_column(sr_dt, "company") and frappe.db.has_column("Contract", "company"):
-        frappe.db.sql(
-            f"""
+	# Step 2: If multiple active contracts exist, prefer same company (when company is present).
+	if _has_column(sr_dt, "company") and frappe.db.has_column("Contract", "company"):
+		frappe.db.sql(
+			f"""
             update {table} sr
             set sr.contract = (
                 select c.name
@@ -86,11 +86,11 @@ def _backfill_contract_on_service_request(sr_dt: str) -> None:
                   and cso2.status = 'Active'
               ) > 1
             """
-        )
+		)
 
-    # Step 3: Fallback to most recent contract by start_date/modified.
-    frappe.db.sql(
-        f"""
+	# Step 3: Fallback to most recent contract by start_date/modified.
+	frappe.db.sql(
+		f"""
         update {table} sr
         set sr.contract = (
             select c.name
@@ -110,12 +110,12 @@ def _backfill_contract_on_service_request(sr_dt: str) -> None:
               and cso2.status = 'Active'
           ) > 1
         """
-    )
+	)
 
-    # Fill customer from contract
-    if _has_column(sr_dt, "customer"):
-        frappe.db.sql(
-            f"""
+	# Fill customer from contract
+	if _has_column(sr_dt, "customer"):
+		frappe.db.sql(
+			f"""
             update {table} sr
             join `tabContract` c on c.name = sr.contract
             set sr.customer = c.party_name
@@ -123,12 +123,12 @@ def _backfill_contract_on_service_request(sr_dt: str) -> None:
               and (ifnull(sr.customer, '') = '')
               and ifnull(c.party_type, '') in ('', 'Customer')
             """
-        )
+		)
 
-    # Fill standard Project link if field exists on SR and Project has contract column.
-    if _has_column(sr_dt, "erpnext_project") and frappe.db.has_column("Project", "contract"):
-        frappe.db.sql(
-            f"""
+	# Fill standard Project link if field exists on SR and Project has contract column.
+	if _has_column(sr_dt, "erpnext_project") and frappe.db.has_column("Project", "contract"):
+		frappe.db.sql(
+			f"""
             update {table} sr
             set sr.erpnext_project = (
                 select p.name from `tabProject` p
@@ -138,21 +138,21 @@ def _backfill_contract_on_service_request(sr_dt: str) -> None:
             where ifnull(sr.contract, '') != ''
               and ifnull(sr.erpnext_project, '') = ''
             """
-        )
+		)
 
 
 def _backfill_contract_on_schedule(sched_dt: str) -> None:
-    if not _has_column(sched_dt, "contract"):
-        return
-    if not _dt_exists("ContractServiceObject"):
-        return
+	if not _has_column(sched_dt, "contract"):
+		return
+	if not _dt_exists("ContractServiceObject"):
+		return
 
-    table = f"`tab{sched_dt}`"
-    # For schedules without contract, try infer from customer+service_project is unreliable; skip.
-    # Only fill erpnext_project when contract already set.
-    if _has_column(sched_dt, "erpnext_project") and frappe.db.has_column("Project", "contract"):
-        frappe.db.sql(
-            f"""
+	table = f"`tab{sched_dt}`"
+	# For schedules without contract, try infer from customer+service_project is unreliable; skip.
+	# Only fill erpnext_project when contract already set.
+	if _has_column(sched_dt, "erpnext_project") and frappe.db.has_column("Project", "contract"):
+		frappe.db.sql(
+			f"""
             update {table} s
             set s.erpnext_project = (
                 select p.name from `tabProject` p
@@ -162,17 +162,17 @@ def _backfill_contract_on_schedule(sched_dt: str) -> None:
             where ifnull(s.contract, '') != ''
               and ifnull(s.erpnext_project, '') = ''
             """
-        )
+		)
 
 
 def _backfill_invoice(invoice_dt: str) -> None:
-    if not _has_column(invoice_dt, "contract"):
-        return
+	if not _has_column(invoice_dt, "contract"):
+		return
 
-    table = f"`tab{invoice_dt}`"
-    if _has_column(invoice_dt, "erpnext_project") and frappe.db.has_column("Project", "contract"):
-        frappe.db.sql(
-            f"""
+	table = f"`tab{invoice_dt}`"
+	if _has_column(invoice_dt, "erpnext_project") and frappe.db.has_column("Project", "contract"):
+		frappe.db.sql(
+			f"""
             update {table} i
             set i.erpnext_project = (
                 select p.name from `tabProject` p
@@ -182,21 +182,21 @@ def _backfill_invoice(invoice_dt: str) -> None:
             where ifnull(i.contract, '') != ''
               and ifnull(i.erpnext_project, '') = ''
             """
-        )
+		)
 
 
 def execute() -> None:
-    sr_dt = _service_request_dt()
-    if sr_dt:
-        _backfill_contract_on_service_request(sr_dt)
+	sr_dt = _service_request_dt()
+	if sr_dt:
+		_backfill_contract_on_service_request(sr_dt)
 
-    sched_dt = _service_schedule_dt()
-    if sched_dt:
-        _backfill_contract_on_schedule(sched_dt)
+	sched_dt = _service_schedule_dt()
+	if sched_dt:
+		_backfill_contract_on_schedule(sched_dt)
 
-    inv_dt = _invoice_dt()
-    if inv_dt:
-        _backfill_invoice(inv_dt)
+	inv_dt = _invoice_dt()
+	if inv_dt:
+		_backfill_invoice(inv_dt)
 
-    frappe.db.commit()
-    frappe.clear_cache()
+	frappe.db.commit()
+	frappe.clear_cache()

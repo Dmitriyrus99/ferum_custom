@@ -153,7 +153,11 @@ def execute() -> None:
 			{"label": "Заявки", "type": "DocType", "link_to": "Service Request", "doc_view": "List"},
 			{"label": "Новая заявка", "type": "URL", "url": "/app/service-request/new"},
 			{"label": "Без инженера", "type": "Report", "link_to": "Unassigned Service Requests"},
-			{"label": "Открытые по инженерам", "type": "Report", "link_to": "Open Service Requests by Engineer"},
+			{
+				"label": "Открытые по инженерам",
+				"type": "Report",
+				"link_to": "Open Service Requests by Engineer",
+			},
 			{"label": "Мои задачи", "type": "DocType", "link_to": "ToDo", "doc_view": "List"},
 		],
 		content_blocks=[
@@ -211,7 +215,11 @@ def execute() -> None:
 			{"label": "Проекты", "type": "DocType", "link_to": "Project", "doc_view": "List"},
 			{"label": "Заявки", "type": "DocType", "link_to": "Service Request", "doc_view": "List"},
 			{"label": "Без инженера", "type": "Report", "link_to": "Unassigned Service Requests"},
-			{"label": "Открытые по инженерам", "type": "Report", "link_to": "Open Service Requests by Engineer"},
+			{
+				"label": "Открытые по инженерам",
+				"type": "Report",
+				"link_to": "Open Service Requests by Engineer",
+			},
 			{"label": "Мои задачи", "type": "DocType", "link_to": "ToDo", "doc_view": "List"},
 		],
 		content_blocks=[

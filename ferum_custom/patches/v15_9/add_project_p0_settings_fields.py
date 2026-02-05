@@ -43,4 +43,3 @@ def execute() -> None:
 		ignore_validate=True,
 	)
 	frappe.clear_cache()
-

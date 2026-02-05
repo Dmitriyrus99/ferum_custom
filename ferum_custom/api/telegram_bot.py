@@ -330,7 +330,9 @@ def _projects_for_link(link: LinkedTelegramUser) -> list[dict]:
 		)
 
 	# Engineer access via Project Site.default_engineer
-	if frappe.db.exists("DocType", _project_site_dt()) and frappe.db.has_column(_project_site_dt(), "default_engineer"):
+	if frappe.db.exists("DocType", _project_site_dt()) and frappe.db.has_column(
+		_project_site_dt(), "default_engineer"
+	):
 		rows = frappe.db.sql(
 			"""
 			select distinct parent
@@ -622,7 +624,11 @@ def confirm_registration(chat_id: int, *, email: str, code: str) -> dict:
 
 	# Convenience: if only one project is granted (portal users), set it as active.
 	try:
-		if link.meta.has_field("active_project") and not getattr(link, "active_project", None) and len(projects) == 1:
+		if (
+			link.meta.has_field("active_project")
+			and not getattr(link, "active_project", None)
+			and len(projects) == 1
+		):
 			frappe.db.set_value(
 				"Telegram User Link",
 				link.name,
@@ -663,7 +669,9 @@ def get_active_project(chat_id: int) -> dict:
 	except Exception:
 		# If permissions changed, clear invalid active project.
 		try:
-			frappe.db.set_value("Telegram User Link", link.name, "active_project", None, update_modified=False)
+			frappe.db.set_value(
+				"Telegram User Link", link.name, "active_project", None, update_modified=False
+			)
 		except Exception:
 			pass
 		return {"project": None}
@@ -755,7 +763,16 @@ def list_requests(chat_id: int, project: str | None = None, limit: int = 10) -> 
 	return frappe.get_all(
 		"Service Request",
 		filters=filters,
-		fields=["name", "title", "status", "priority", "erp_project", "project_site", "assigned_to", "modified"],
+		fields=[
+			"name",
+			"title",
+			"status",
+			"priority",
+			"erp_project",
+			"project_site",
+			"assigned_to",
+			"modified",
+		],
 		limit=cint(limit) or 10,
 		order_by="modified desc",
 	)
@@ -1013,7 +1030,9 @@ def upload_survey_evidence(
 		ensure_drive_folders(project)
 	except Exception:
 		# Keep any exceptions user-friendly (project_drive already does), but log traceback here.
-		frappe.log_error(title="Ferum: upload_survey_evidence ensure_drive_folders", message=frappe.get_traceback())
+		frappe.log_error(
+			title="Ferum: upload_survey_evidence ensure_drive_folders", message=frappe.get_traceback()
+		)
 		raise
 
 	site_folder_url = frappe.db.get_value(_project_site_dt(), project_site, "drive_folder_url")
@@ -1030,7 +1049,9 @@ def upload_survey_evidence(
 	except requests.RequestException as e:
 		# Do not log traceback: it may contain full Telegram API URLs with bot token.
 		frappe.log_error(title="Ferum: Telegram getFile failed", message=_safe_requests_error_summary(e))
-		raise frappe.ValidationError(_("Не удалось получить файл из Telegram. Попробуйте отправить файл ещё раз.")) from None
+		raise frappe.ValidationError(
+			_("Не удалось получить файл из Telegram. Попробуйте отправить файл ещё раз.")
+		) from None
 	except Exception as e:
 		frappe.log_error(title="Ferum: Telegram getFile failed", message=_safe_requests_error_summary(e))
 		raise frappe.ValidationError(_("Не удалось получить файл из Telegram.")) from None
@@ -1044,8 +1065,12 @@ def upload_survey_evidence(
 			tmp_path = _download_to_tempfile(download_url, suffix=suffix)
 		except requests.RequestException as e:
 			# Do not log traceback: it may contain full Telegram API URLs with bot token.
-			frappe.log_error(title="Ferum: Telegram file download failed", message=_safe_requests_error_summary(e))
-			raise frappe.ValidationError(_("Не удалось скачать файл из Telegram. Попробуйте отправить файл ещё раз.")) from None
+			frappe.log_error(
+				title="Ferum: Telegram file download failed", message=_safe_requests_error_summary(e)
+			)
+			raise frappe.ValidationError(
+				_("Не удалось скачать файл из Telegram. Попробуйте отправить файл ещё раз.")
+			) from None
 
 		from ferum_custom.integrations.google_drive_folders import (
 			ensure_folder,
@@ -1077,7 +1102,13 @@ def upload_survey_evidence(
 			limit=1,
 		)
 		if row_name:
-			frappe.db.set_value(_survey_checklist_dt(), row_name[0], "evidence_link", section_folder.web_view_link, update_modified=False)
+			frappe.db.set_value(
+				_survey_checklist_dt(),
+				row_name[0],
+				"evidence_link",
+				section_folder.web_view_link,
+				update_modified=False,
+			)
 			frappe.db.set_value(_survey_checklist_dt(), row_name[0], "done", 1, update_modified=False)
 		else:
 			row = frappe.get_doc(
@@ -1103,7 +1134,9 @@ def upload_survey_evidence(
 				)
 		except Exception:
 			# Best-effort: don't fail the whole upload because of comment permission.
-			frappe.log_error(title="Ferum: upload_survey_evidence add_comment", message=frappe.get_traceback())
+			frappe.log_error(
+				title="Ferum: upload_survey_evidence add_comment", message=frappe.get_traceback()
+			)
 
 		return {
 			"ok": True,
@@ -1166,7 +1199,11 @@ def _assert_service_request_access(link: LinkedTelegramUser, doc) -> tuple[str, 
 		assigned_to = (getattr(doc, "assigned_to", None) or "").strip()
 		if assigned_to and assigned_to == link.user:
 			return project, site
-		if site and frappe.db.exists("DocType", _project_site_dt()) and frappe.db.exists(_project_site_dt(), site):
+		if (
+			site
+			and frappe.db.exists("DocType", _project_site_dt())
+			and frappe.db.exists(_project_site_dt(), site)
+		):
 			engineer = frappe.db.get_value(_project_site_dt(), site, "default_engineer")
 			if str(engineer or "").strip() == link.user:
 				return project, site
@@ -1240,10 +1277,17 @@ def upload_service_request_attachment(
 
 		ensure_drive_folders(project)
 	except Exception:
-		frappe.log_error(title="Ferum: upload_service_request_attachment ensure_drive_folders", message=frappe.get_traceback())
+		frappe.log_error(
+			title="Ferum: upload_service_request_attachment ensure_drive_folders",
+			message=frappe.get_traceback(),
+		)
 		raise
 
-	if not site or not frappe.db.exists("DocType", _project_site_dt()) or not frappe.db.exists(_project_site_dt(), site):
+	if (
+		not site
+		or not frappe.db.exists("DocType", _project_site_dt())
+		or not frappe.db.exists(_project_site_dt(), site)
+	):
 		frappe.throw(_("Service Request does not have a valid Project Site."))
 
 	site_folder_url = frappe.db.get_value(_project_site_dt(), site, "drive_folder_url")
@@ -1260,7 +1304,9 @@ def upload_service_request_attachment(
 	except requests.RequestException as e:
 		# Do not log traceback: it may contain full Telegram API URLs with bot token.
 		frappe.log_error(title="Ferum: Telegram getFile failed", message=_safe_requests_error_summary(e))
-		raise frappe.ValidationError(_("Не удалось получить файл из Telegram. Попробуйте отправить файл ещё раз.")) from None
+		raise frappe.ValidationError(
+			_("Не удалось получить файл из Telegram. Попробуйте отправить файл ещё раз.")
+		) from None
 	except Exception as e:
 		frappe.log_error(title="Ferum: Telegram getFile failed", message=_safe_requests_error_summary(e))
 		raise frappe.ValidationError(_("Не удалось получить файл из Telegram.")) from None
@@ -1275,8 +1321,12 @@ def upload_service_request_attachment(
 			tmp_path = _download_to_tempfile(download_url, suffix=suffix)
 		except requests.RequestException as e:
 			# Do not log traceback: it may contain full Telegram API URLs with bot token.
-			frappe.log_error(title="Ferum: Telegram file download failed", message=_safe_requests_error_summary(e))
-			raise frappe.ValidationError(_("Не удалось скачать файл из Telegram. Попробуйте отправить файл ещё раз.")) from None
+			frappe.log_error(
+				title="Ferum: Telegram file download failed", message=_safe_requests_error_summary(e)
+			)
+			raise frappe.ValidationError(
+				_("Не удалось скачать файл из Telegram. Попробуйте отправить файл ещё раз.")
+			) from None
 
 		from ferum_custom.integrations.google_drive_folders import (
 			ensure_folder,
@@ -1298,7 +1348,9 @@ def upload_service_request_attachment(
 					f"Вложение (бот): {file_name}\n{drive_file.web_view_link or ''}",
 				)
 		except Exception:
-			frappe.log_error(title="Ferum: upload_service_request_attachment add_comment", message=frappe.get_traceback())
+			frappe.log_error(
+				title="Ferum: upload_service_request_attachment add_comment", message=frappe.get_traceback()
+			)
 
 		return {
 			"ok": True,

@@ -5,4 +5,3 @@ from frappe.model.document import Document
 
 class ProjectOutboundMailItem(Document):
 	pass
-

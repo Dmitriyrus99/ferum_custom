@@ -135,9 +135,9 @@ has_permission = {
 # ---------------
 # Override standard doctype classes
 
-# override_doctype_class = {
-# 	"ToDo": "custom_app.overrides.CustomToDo"
-# }
+override_doctype_class = {
+	"Email Account": "ferum_custom.overrides.email_account.FerumEmailAccount",
+}
 
 # Document Events
 # ---------------
@@ -157,25 +157,24 @@ doc_events = {
 	},
 	"Service Request": {
 		"after_insert": "ferum_custom.notifications.notify_new_service_request",
-		"on_update": "ferum_custom.notifications.notify_service_request_status_change"
+		"on_update": "ferum_custom.notifications.notify_service_request_status_change",
 	},
 	"Service Report": {
 		"after_insert": "ferum_custom.notifications.notify_new_service_report",
-		"on_submit": "ferum_custom.notifications.notify_service_report_status_change"
+		"on_submit": "ferum_custom.notifications.notify_service_report_status_change",
 	},
 	"ServiceRequest": {
 		"after_insert": "ferum_custom.notifications.notify_new_service_request",
-		"on_update": "ferum_custom.notifications.notify_service_request_status_change"
+		"on_update": "ferum_custom.notifications.notify_service_request_status_change",
 	},
 	"ServiceReport": {
 		"after_insert": "ferum_custom.notifications.notify_new_service_report",
-		"on_submit": "ferum_custom.notifications.notify_service_report_status_change"
+		"on_submit": "ferum_custom.notifications.notify_service_report_status_change",
 	},
 	"Invoice": {
 		"after_insert": "ferum_custom.notifications.notify_new_invoice",
-		"on_update": "ferum_custom.notifications.notify_invoice_status_change"
-	}
-	,
+		"on_update": "ferum_custom.notifications.notify_invoice_status_change",
+	},
 	"File": {
 		"validate": "ferum_custom.services.project_documents.validate_project_document_file",
 	},
@@ -229,8 +228,7 @@ override_whitelisted_methods = {
 
 # Job Events
 # ----------
-# before_job = ["ferum_custom.utils.before_job"]
-# after_job = ["ferum_custom.utils.after_job"]
+after_job = ["ferum_custom.utils.background_jobs.ensure_job_context"]
 
 # User Data Protection
 # --------------------

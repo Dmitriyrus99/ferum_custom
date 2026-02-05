@@ -31,7 +31,9 @@ def execute() -> None:
 		return
 
 	project_meta = frappe.get_meta("Project")
-	project_insert_after = "welcome_email_sent_date" if project_meta.has_field("welcome_email_sent_date") else None
+	project_insert_after = (
+		"welcome_email_sent_date" if project_meta.has_field("welcome_email_sent_date") else None
+	)
 
 	create_custom_fields(
 		{

@@ -55,4 +55,3 @@ def execute() -> None:
 		_upsert_custom_docperm("Project", role, 0, perms)
 
 	frappe.clear_cache()
-

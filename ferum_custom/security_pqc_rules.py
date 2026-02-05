@@ -7,33 +7,33 @@ import frappe
 
 
 def _is_client_user(user: str) -> bool:
-    try:
-        return user != "Administrator" and "Client" in set(frappe.get_roles(user))
-    except Exception:
-        return False
+	try:
+		return user != "Administrator" and "Client" in set(frappe.get_roles(user))
+	except Exception:
+		return False
 
 
 def project_permission_query_conditions(user: str, doctype: str | None = None) -> str:
-    """Permission Query Conditions for `Project`.
+	"""Permission Query Conditions for `Project`.
 
-    The Desk "Projects" workspace triggers count/list queries on `Project`.
-    Historically, this site referenced `ferum_custom.security_pqc_rules.*` from
-    `Project.permission_query_conditions`. If that module is missing, Desk breaks.
+	The Desk "Projects" workspace triggers count/list queries on `Project`.
+	Historically, this site referenced `ferum_custom.security_pqc_rules.*` from
+	`Project.permission_query_conditions`. If that module is missing, Desk breaks.
 
-    Policy:
-    - Client users are not allowed to see `Project` in Desk → deny.
-    - Internal users: no extra filtering (standard ERPNext permissions apply).
-    """
-    _ = doctype
-    if _is_client_user(user):
-        return "1=0"
-    return ""
+	Policy:
+	- Client users are not allowed to see `Project` in Desk → deny.
+	- Internal users: no extra filtering (standard ERPNext permissions apply).
+	"""
+	_ = doctype
+	if _is_client_user(user):
+		return "1=0"
+	return ""
 
 
 def permission_query_conditions(user: str, doctype: str | None = None) -> str:
-    if doctype == "Project":
-        return project_permission_query_conditions(user, doctype=doctype)
-    return ""
+	if doctype == "Project":
+		return project_permission_query_conditions(user, doctype=doctype)
+	return ""
 
 
 # Compatibility aliases for older configurations
@@ -42,18 +42,18 @@ get_project_permission_query_conditions = project_permission_query_conditions
 
 
 def __getattr__(name: str) -> Any:
-    """Return a safe fallback for legacy configured function names.
+	"""Return a safe fallback for legacy configured function names.
 
-    Frappe resolves doctype permission_query_conditions via dotted paths stored in DB.
-    If the configured attribute name differs, we still prefer returning a safe default
-    rather than crashing Desk.
-    """
+	Frappe resolves doctype permission_query_conditions via dotted paths stored in DB.
+	If the configured attribute name differs, we still prefer returning a safe default
+	rather than crashing Desk.
+	"""
 
-    def _fallback(user: str, doctype: str | None = None) -> str:
-        return permission_query_conditions(user, doctype=doctype)
+	def _fallback(user: str, doctype: str | None = None) -> str:
+		return permission_query_conditions(user, doctype=doctype)
 
-    legacy_prefixes = ("pqc_",)
-    legacy_suffixes = ("_permission_query_conditions", "_pqc")
-    if name.startswith(legacy_prefixes) or name.endswith(legacy_suffixes):
-        return _fallback
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+	legacy_prefixes = ("pqc_",)
+	legacy_suffixes = ("_permission_query_conditions", "_pqc")
+	if name.startswith(legacy_prefixes) or name.endswith(legacy_suffixes):
+		return _fallback
+	raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

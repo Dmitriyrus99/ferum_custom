@@ -43,4 +43,3 @@ def execute(filters: dict | None = None) -> tuple[list[str], list[list[Any]]]:
 		as_list=True,
 	)
 	return columns, rows
-

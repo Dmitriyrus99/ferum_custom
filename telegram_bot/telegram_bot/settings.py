@@ -59,17 +59,24 @@ def load_settings() -> Settings:
 
 	frappe_base_url = (os.getenv("FERUM_FRAPPE_BASE_URL") or os.getenv("ERP_API_URL") or "").strip() or None
 	frappe_api_key = (os.getenv("FERUM_FRAPPE_API_KEY") or os.getenv("ERP_API_KEY") or "").strip() or None
-	frappe_api_secret = (os.getenv("FERUM_FRAPPE_API_SECRET") or os.getenv("ERP_API_SECRET") or "").strip() or None
-	default_company = (os.getenv("FERUM_DEFAULT_COMPANY") or os.getenv("DEFAULT_COMPANY") or "").strip() or None
+	frappe_api_secret = (
+		os.getenv("FERUM_FRAPPE_API_SECRET") or os.getenv("ERP_API_SECRET") or ""
+	).strip() or None
+	default_company = (
+		os.getenv("FERUM_DEFAULT_COMPANY") or os.getenv("DEFAULT_COMPANY") or ""
+	).strip() or None
 
-	webhook_url = (os.getenv("FERUM_TELEGRAM_WEBHOOK_URL") or os.getenv("TELEGRAM_WEBHOOK_URL") or "").strip() or None
-	webhook_path = (os.getenv("FERUM_TELEGRAM_WEBHOOK_PATH") or os.getenv("TELEGRAM_WEBHOOK_PATH") or "/tg-bot/webhook").strip()
+	webhook_url = (
+		os.getenv("FERUM_TELEGRAM_WEBHOOK_URL") or os.getenv("TELEGRAM_WEBHOOK_URL") or ""
+	).strip() or None
+	webhook_path = (
+		os.getenv("FERUM_TELEGRAM_WEBHOOK_PATH") or os.getenv("TELEGRAM_WEBHOOK_PATH") or "/tg-bot/webhook"
+	).strip()
 	if not webhook_path.startswith("/"):
 		webhook_path = "/" + webhook_path
 	webhook_secret = (
-		(os.getenv("FERUM_TELEGRAM_WEBHOOK_SECRET") or os.getenv("TELEGRAM_WEBHOOK_SECRET") or "").strip()
-		or None
-	)
+		os.getenv("FERUM_TELEGRAM_WEBHOOK_SECRET") or os.getenv("TELEGRAM_WEBHOOK_SECRET") or ""
+	).strip() or None
 	webhook_host = (os.getenv("FERUM_TELEGRAM_WEBHOOK_HOST") or "0.0.0.0").strip() or "0.0.0.0"
 	webhook_port_raw = (os.getenv("FERUM_TELEGRAM_WEBHOOK_PORT") or "8080").strip()
 	try:

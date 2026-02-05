@@ -16,7 +16,6 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from ..frappe import FrappeAPI, FrappeAPIError
 from ..settings import Settings
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -140,7 +139,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			],
 			resize_keyboard=True,
 			selective=True,
-			)
+		)
 
 	_MAIN_MENU_TEXTS = {
 		"🔗 Регистрация",
@@ -276,7 +275,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		builder = InlineKeyboardBuilder()
 		for idx, row in enumerate(projects[:20]):
 			project = str(row.get("name") or "").strip()
-			builder.button(text=_project_label(row), callback_data=_project_callback("nr_proj", project or None, idx))
+			builder.button(
+				text=_project_label(row), callback_data=_project_callback("nr_proj", project or None, idx)
+			)
 		builder.adjust(1)
 		await state.set_state(_NewRequest.project)
 		await message.answer(prompt, reply_markup=builder.as_markup())
@@ -291,7 +292,10 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			)
 		except FrappeAPIError as e:
 			await state.clear()
-			await message.answer(f"Не удалось получить список объектов: {e.status_code}: {e.message}", reply_markup=_main_menu())
+			await message.answer(
+				f"Не удалось получить список объектов: {e.status_code}: {e.message}",
+				reply_markup=_main_menu(),
+			)
 			return
 		except Exception:
 			logger.exception("Failed to fetch project objects")
@@ -329,7 +333,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		builder = InlineKeyboardBuilder()
 		for idx, row in enumerate(projects[:20]):
 			project = str(row.get("name") or "").strip()
-			builder.button(text=_project_label(row), callback_data=_project_callback("sv_proj", project or None, idx))
+			builder.button(
+				text=_project_label(row), callback_data=_project_callback("sv_proj", project or None, idx)
+			)
 		builder.button(text="Отмена", callback_data="sv_cancel")
 		builder.adjust(1)
 		await state.set_state(_Survey.project)
@@ -393,7 +399,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			)
 		except FrappeAPIError as e:
 			await state.clear()
-			await message.answer(f"Не удалось получить чек-лист: {e.status_code}: {e.message}", reply_markup=_main_menu())
+			await message.answer(
+				f"Не удалось получить чек-лист: {e.status_code}: {e.message}", reply_markup=_main_menu()
+			)
 			return
 		except Exception:
 			logger.exception("Failed to fetch survey checklist")
@@ -417,7 +425,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		await state.set_state(_Survey.section)
 		await message.answer("Выбери раздел чек-листа:", reply_markup=builder.as_markup())
 
-	async def _start_registration(message: Message, *, user_email: str, state: FSMContext | None = None) -> None:
+	async def _start_registration(
+		message: Message, *, user_email: str, state: FSMContext | None = None
+	) -> None:
 		assert api is not None
 		user_email = (user_email or "").strip()
 		if not user_email:
@@ -451,7 +461,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			)
 			reg_cache.set(message.chat.id, True)
 			user = str((result or {}).get("user") or "")
-			await message.answer(f"Готово. Чат привязан к пользователю ERP: {user}", reply_markup=_main_menu())
+			await message.answer(
+				f"Готово. Чат привязан к пользователю ERP: {user}", reply_markup=_main_menu()
+			)
 		except FrappeAPIError as e:
 			await message.answer(f"Не удалось подтвердить: {e.status_code}: {e.message}")
 		except Exception:
@@ -534,8 +546,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		if not _chat_allowed(message):
 			return
 		await message.answer(
-			f"chat_id={message.chat.id}\n"
-			f"from=@{message.from_user.username if message.from_user else ''}\n"
+			f"chat_id={message.chat.id}\nfrom=@{message.from_user.username if message.from_user else ''}\n"
 		)
 
 	@router.message(Command("me"))
@@ -662,7 +673,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		active_payload = await _get_active_project(int(message.chat.id))
 		project = str(active_payload.get("project") or "").strip() or None
 		if project:
-			await state.update_data(project=project, project_label=str(active_payload.get("project_name") or project))
+			await state.update_data(
+				project=project, project_label=str(active_payload.get("project_name") or project)
+			)
 			await _choose_object_for_survey(message, state, project)
 			return
 		await _choose_project_for_survey(message, state, prompt="Выбери проект для обследования:")
@@ -701,7 +714,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			)
 		except FrappeAPIError as e:
 			await state.clear()
-			await message.answer(f"Не удалось открыть заявку: {e.status_code}: {e.message}", reply_markup=_main_menu())
+			await message.answer(
+				f"Не удалось открыть заявку: {e.status_code}: {e.message}", reply_markup=_main_menu()
+			)
 			return
 		except Exception:
 			logger.exception("Failed to load service request")
@@ -804,7 +819,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		if idx < 0 or idx >= len(rows):
 			await query.answer()
 			await state.clear()
-			await message.answer("Сессия выбора заявки устарела. Запусти /attach заново.", reply_markup=_main_menu())
+			await message.answer(
+				"Сессия выбора заявки устарела. Запусти /attach заново.", reply_markup=_main_menu()
+			)
 			return
 
 		req = rows[idx] or {}
@@ -812,7 +829,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		await query.answer()
 		if not req_name:
 			await state.clear()
-			await message.answer("Не удалось определить заявку. Запусти /attach заново.", reply_markup=_main_menu())
+			await message.answer(
+				"Не удалось определить заявку. Запусти /attach заново.", reply_markup=_main_menu()
+			)
 			return
 		await _start_attach_for_request(message, state, service_request=req_name)
 
@@ -851,7 +870,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 				timeout=120.0,
 			)
 			await state.update_data(last_folder_url=str((result or {}).get("folder_url") or ""))
-			await message.answer(f"Загружено: {str((result or {}).get('file_url') or '')}")
+			await message.answer(f"Загружено: {(result or {}).get('file_url') or ''!s}")
 		except FrappeAPIError as e:
 			await message.answer(f"Не удалось загрузить: {e.status_code}: {e.message}")
 		except Exception:
@@ -885,7 +904,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 				timeout=120.0,
 			)
 			await state.update_data(last_folder_url=str((result or {}).get("folder_url") or ""))
-			await message.answer(f"Загружено: {str((result or {}).get('file_url') or '')}")
+			await message.answer(f"Загружено: {(result or {}).get('file_url') or ''!s}")
 		except FrappeAPIError as e:
 			await message.answer(f"Не удалось загрузить: {e.status_code}: {e.message}")
 		except Exception:
@@ -902,7 +921,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			data = await state.get_data()
 			folder = str(data.get("last_folder_url") or "").strip()
 			await state.clear()
-			await message.answer(("Ок. Папка заявки:\n" + folder) if folder else "Ок.", reply_markup=_main_menu())
+			await message.answer(
+				("Ок. Папка заявки:\n" + folder) if folder else "Ок.", reply_markup=_main_menu()
+			)
 			return
 		if text in {"пропустить", "skip"}:
 			await state.clear()
@@ -933,7 +954,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			builder = InlineKeyboardBuilder()
 			for idx, row in enumerate(projects[:20]):
 				project = str(row.get("name") or "").strip()
-				builder.button(text=_project_label(row), callback_data=_project_callback("mr_proj", project or None, idx))
+				builder.button(
+					text=_project_label(row), callback_data=_project_callback("mr_proj", project or None, idx)
+				)
 			builder.adjust(1)
 			await state.set_state(_MyRequestsPick.project)
 			await message.answer("Выбери проект для списка заявок:", reply_markup=builder.as_markup())
@@ -948,7 +971,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			await message.answer(f"Заявок по проекту {project} не найдено.")
 			return
 		lines = [
-			f"{r.get('name')}: {str(r.get('title',''))[:60]} [{_tr_status(str(r.get('status','') or '').strip())}]"
+			f"{r.get('name')}: {str(r.get('title', ''))[:60]} [{_tr_status(str(r.get('status', '') or '').strip())}]"
 			for r in rows
 		]
 		await message.answer(
@@ -994,7 +1017,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		if not selected_project:
 			await query.answer()
 			await state.clear()
-			await message.answer("Сессия выбора проекта устарела. Запусти /my_requests заново.", reply_markup=_main_menu())
+			await message.answer(
+				"Сессия выбора проекта устарела. Запусти /my_requests заново.", reply_markup=_main_menu()
+			)
 			return
 		project_label = selected_label or selected_project
 
@@ -1019,7 +1044,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 				await message.answer(f"Заявок по проекту {project_label} не найдено.")
 				return
 			lines = [
-				f"{r.get('name')}: {str(r.get('title',''))[:60]} [{_tr_status(str(r.get('status','') or '').strip())}]"
+				f"{r.get('name')}: {str(r.get('title', ''))[:60]} [{_tr_status(str(r.get('status', '') or '').strip())}]"
 				for r in rows
 			]
 			await message.answer(
@@ -1057,7 +1082,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 					reply_markup=_main_menu(),
 				)
 			except FrappeAPIError as e:
-				await message.answer(f"Операция не выполнена: {e.status_code}: {e.message}", reply_markup=_main_menu())
+				await message.answer(
+					f"Операция не выполнена: {e.status_code}: {e.message}", reply_markup=_main_menu()
+				)
 			except Exception:
 				logger.exception("Subscribe active project failed")
 				await message.answer("Операция не выполнена (см. логи).", reply_markup=_main_menu())
@@ -1091,7 +1118,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 					reply_markup=_main_menu(),
 				)
 			except FrappeAPIError as e:
-				await message.answer(f"Операция не выполнена: {e.status_code}: {e.message}", reply_markup=_main_menu())
+				await message.answer(
+					f"Операция не выполнена: {e.status_code}: {e.message}", reply_markup=_main_menu()
+				)
 			except Exception:
 				logger.exception("Unsubscribe active project failed")
 				await message.answer("Операция не выполнена (см. логи).", reply_markup=_main_menu())
@@ -1161,7 +1190,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		if not project:
 			await query.answer()
 			await state.clear()
-			await message.answer("Сессия выбора проекта устарела. Запусти /projects заново.", reply_markup=_main_menu())
+			await message.answer(
+				"Сессия выбора проекта устарела. Запусти /projects заново.", reply_markup=_main_menu()
+			)
 			return
 
 		await query.answer()
@@ -1180,7 +1211,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 					await _set_active_project(int(message.chat.id), project)
 				except Exception:
 					pass
-				await message.answer(f"Подписка на проект {project_label or project}: OK", reply_markup=_main_menu())
+				await message.answer(
+					f"Подписка на проект {project_label or project}: OK", reply_markup=_main_menu()
+				)
 				return
 			if action == "unsubscribe":
 				await api.call_message(
@@ -1200,7 +1233,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			await _set_active_project(int(message.chat.id), project)
 			await message.answer(f"Активный проект: {project_label or project}", reply_markup=_main_menu())
 		except FrappeAPIError as e:
-			await message.answer(f"Операция не выполнена: {e.status_code}: {e.message}", reply_markup=_main_menu())
+			await message.answer(
+				f"Операция не выполнена: {e.status_code}: {e.message}", reply_markup=_main_menu()
+			)
 		except Exception:
 			logger.exception("Pick project action failed")
 			await message.answer("Операция не выполнена (см. логи).", reply_markup=_main_menu())
@@ -1231,7 +1266,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 				await message.answer("No Service Request found.")
 				return
 			lines = [
-				f"{r.get('name')}: {str(r.get('title',''))[:60]} [{_tr_status(str(r.get('status','') or '').strip())}]"
+				f"{r.get('name')}: {str(r.get('title', ''))[:60]} [{_tr_status(str(r.get('status', '') or '').strip())}]"
 				for r in rows
 			]
 			await message.answer("\n".join(lines))
@@ -1304,7 +1339,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		if not selected_project:
 			await query.answer()
 			await state.clear()
-			await message.answer("Сессия выбора проекта устарела. Запусти /new_request заново.", reply_markup=_main_menu())
+			await message.answer(
+				"Сессия выбора проекта устарела. Запусти /new_request заново.", reply_markup=_main_menu()
+			)
 			return
 
 		if api:
@@ -1340,7 +1377,11 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 						http_method="GET",
 					)
 					row = next(
-						(r for r in (refreshed or []) if str(r.get("name") or "").strip() == selected_project),
+						(
+							r
+							for r in (refreshed or [])
+							if str(r.get("name") or "").strip() == selected_project
+						),
 						None,
 					)
 				except Exception:
@@ -1367,7 +1408,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		if not selected_project:
 			await query.answer()
 			await state.clear()
-			await message.answer("Сессия выбора проекта устарела. Запусти /survey заново.", reply_markup=_main_menu())
+			await message.answer(
+				"Сессия выбора проекта устарела. Запусти /survey заново.", reply_markup=_main_menu()
+			)
 			return
 
 		if api:
@@ -1415,7 +1458,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		if idx < 0 or idx >= len(objects):
 			await query.answer()
 			await state.clear()
-			await message.answer("Сессия выбора объекта устарела. Запусти /survey заново.", reply_markup=_main_menu())
+			await message.answer(
+				"Сессия выбора объекта устарела. Запусти /survey заново.", reply_markup=_main_menu()
+			)
 			return
 
 		obj = objects[idx] or {}
@@ -1424,7 +1469,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		if not obj_name or not project:
 			await query.answer()
 			return
-		await state.update_data(project=project, objects=objects, service_object=obj_name, service_object_label=obj_label)
+		await state.update_data(
+			project=project, objects=objects, service_object=obj_name, service_object_label=obj_label
+		)
 		await query.answer()
 		await _show_survey_sections(message, state, project=project)
 
@@ -1464,7 +1511,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		if idx < 0 or idx >= len(rows):
 			await query.answer()
 			await state.clear()
-			await message.answer("Сессия выбора раздела устарела. Запусти /survey заново.", reply_markup=_main_menu())
+			await message.answer(
+				"Сессия выбора раздела устарела. Запусти /survey заново.", reply_markup=_main_menu()
+			)
 			return
 
 		row = rows[idx] or {}
@@ -1495,7 +1544,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		section = str(data.get("survey_section") or "")
 		if not project or not obj or not section:
 			await state.clear()
-			await message.answer("Сессия обследования устарела. Запусти /survey заново.", reply_markup=_main_menu())
+			await message.answer(
+				"Сессия обследования устарела. Запусти /survey заново.", reply_markup=_main_menu()
+			)
 			return
 		photo = (message.photo or [])[-1]
 		try:
@@ -1512,7 +1563,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 				timeout=120.0,
 			)
 			await state.update_data(last_folder_url=str((result or {}).get("folder_url") or ""))
-			await message.answer(f"Загружено: {str((result or {}).get('file_url') or '')}")
+			await message.answer(f"Загружено: {(result or {}).get('file_url') or ''!s}")
 		except FrappeAPIError as e:
 			await message.answer(f"Не удалось загрузить: {e.status_code}: {e.message}")
 		except Exception:
@@ -1533,7 +1584,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		doc = message.document
 		if not project or not obj or not section or not doc:
 			await state.clear()
-			await message.answer("Сессия обследования устарела. Запусти /survey заново.", reply_markup=_main_menu())
+			await message.answer(
+				"Сессия обследования устарела. Запусти /survey заново.", reply_markup=_main_menu()
+			)
 			return
 		try:
 			result = await api.call_message(
@@ -1550,7 +1603,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 				timeout=120.0,
 			)
 			await state.update_data(last_folder_url=str((result or {}).get("folder_url") or ""))
-			await message.answer(f"Загружено: {str((result or {}).get('file_url') or '')}")
+			await message.answer(f"Загружено: {(result or {}).get('file_url') or ''!s}")
 		except FrappeAPIError as e:
 			await message.answer(f"Не удалось загрузить: {e.status_code}: {e.message}")
 		except Exception:
@@ -1567,7 +1620,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 			data = await state.get_data()
 			folder = str(data.get("last_folder_url") or "").strip()
 			await state.clear()
-			await message.answer(("Ок. Папка раздела:\n" + folder) if folder else "Ок.", reply_markup=_main_menu())
+			await message.answer(
+				("Ок. Папка раздела:\n" + folder) if folder else "Ок.", reply_markup=_main_menu()
+			)
 			return
 		await message.answer("Отправь фото/файл или напиши «готово» (или «❌ Отмена»).")
 
@@ -1617,7 +1672,9 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 		if idx < 0 or idx >= len(objects):
 			await query.answer()
 			await state.clear()
-			await message.answer("Сессия выбора объекта устарела. Запусти /new_request заново.", reply_markup=_main_menu())
+			await message.answer(
+				"Сессия выбора объекта устарела. Запусти /new_request заново.", reply_markup=_main_menu()
+			)
 			return
 		service_object = str(objects[idx].get("name") or "")
 		service_object_label = str(objects[idx].get("object_name") or service_object)
@@ -1766,7 +1823,7 @@ def build_router(settings: Settings, api: FrappeAPI | None) -> Router:
 				await message.answer("No Invoice found.")
 				return
 			lines = [
-				f"{r.get('name')}: {str(r.get('counterparty_name',''))[:40]} {r.get('amount','')} [{r.get('status','')}]"
+				f"{r.get('name')}: {str(r.get('counterparty_name', ''))[:40]} {r.get('amount', '')} [{r.get('status', '')}]"
 				for r in rows
 			]
 			await message.answer("\n".join(lines))

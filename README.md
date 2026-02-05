@@ -19,6 +19,19 @@ This app uses `pre-commit` for code formatting and linting. Please [install pre-
 ```bash
 cd apps/ferum_custom
 pre-commit install
+pre-commit install --hook-type pre-push
+```
+
+Or use the helper script:
+
+```bash
+bash scripts/precommit/install.sh
+```
+
+If you run inside a container where `~/.cache` is read-only, set a writable cache dir:
+
+```bash
+export PRE_COMMIT_HOME=/home/frappe/frappe-bench/.cache/pre-commit
 ```
 
 Pre-commit is configured to use the following tools for checking and formatting your code:
@@ -26,7 +39,9 @@ Pre-commit is configured to use the following tools for checking and formatting 
 - ruff
 - eslint
 - prettier
-- pyupgrade
+- pyupgrade (via ruff `UP` rules)
+
+Local/CI quality checklist: see `docs/runbooks/quality_gates.md`.
 
 ### CI
 

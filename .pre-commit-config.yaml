@@ -20,14 +20,15 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        files: "^backend/.*\\.py$"
-        exclude: ".*json$|.*txt$|.*csv|.*md|.*svg"
+        # Keep this lightweight and avoid touching large/binary assets.
+        exclude: ".*json$|.*txt$|.*csv$|.*md$|.*svg$"
       - id: check-merge-conflict
       - id: check-ast
       - id: check-json
       - id: check-toml
       - id: check-yaml
       - id: debug-statements
+      - id: end-of-file-fixer
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.11
@@ -35,16 +36,31 @@ repos:
       - id: ruff
         name: "Run ruff import sorter"
         args: ["--select=I", "--fix"]
-        files: "^backend/.*\\.py$"
+        files: "^(backend|ferum_custom|telegram_bot|scripts)/.*\\.py$"
+        stages: [pre-commit]
 
       - id: ruff
         name: "Run ruff linter"
         args: ["--extend-ignore=I"]
-        files: "^backend/.*\\.py$"
+        files: "^(backend|ferum_custom|telegram_bot|scripts)/.*\\.py$"
+        stages: [pre-commit]
 
       - id: ruff-format
         name: "Run ruff formatter"
-        files: "^backend/.*\\.py$"
+        files: "^(backend|ferum_custom|telegram_bot|scripts)/.*\\.py$"
+        stages: [pre-commit]
+
+      - id: ruff
+        name: "Run ruff check (all)"
+        args: ["backend", "ferum_custom", "telegram_bot", "scripts"]
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: ruff-format
+        name: "Run ruff formatter (check all)"
+        args: ["--check", "backend", "ferum_custom", "telegram_bot", "scripts"]
+        pass_filenames: false
+        stages: [pre-push]
 
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.7.1
@@ -60,6 +76,7 @@ repos:
                 ferum_custom/templates/includes/.*|
                 ferum_custom/public/js/lib/.*
             )$
+        stages: [pre-commit]
 
 
   - repo: https://github.com/pre-commit/mirrors-eslint
@@ -78,6 +95,7 @@ repos:
                 ferum_custom/templates/includes/.*|
                 ferum_custom/public/js/lib/.*
             )$
+        stages: [pre-commit]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.19.1
@@ -88,12 +106,26 @@ repos:
         pass_filenames: false
         additional_dependencies:
           - types-redis
-        stages: [manual]
+        stages: [manual, pre-push]
 
   - repo: local
     hooks:
+      - id: compileall
+        name: Compile python sources
+        entry: python -m compileall -q backend ferum_custom telegram_bot scripts
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: pytest-backend
+        name: Pytest (backend/tests)
+        entry: bash scripts/precommit/pytest_backend.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
       - id: pytest
-        name: pytest
+        name: pytest (manual)
         entry: env PYTHONPATH=. pytest -q
         language: system
         types: [python]

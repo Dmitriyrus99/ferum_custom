@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import frappe
 
-
 STAGES: list[str] = [
 	"Tender Won",
 	"Contact Established",
@@ -52,7 +51,9 @@ def execute() -> None:
 	# Ensure Workflow State master docs exist.
 	for state in STAGES:
 		if not frappe.db.exists("Workflow State", state):
-			ws = frappe.get_doc({"doctype": "Workflow State", "workflow_state_name": state, "style": "Primary"})
+			ws = frappe.get_doc(
+				{"doctype": "Workflow State", "workflow_state_name": state, "style": "Primary"}
+			)
 			ws.insert(ignore_permissions=True)
 
 	# Ensure workflow action exists.
@@ -76,7 +77,13 @@ def execute() -> None:
 				)
 
 	# Transitions: sequential stage updates.
-	transition_roles = ["System Manager", "Projects Manager", "Project Manager", "General Director", "Ferum Director"]
+	transition_roles = [
+		"System Manager",
+		"Projects Manager",
+		"Project Manager",
+		"General Director",
+		"Ferum Director",
+	]
 	for i in range(len(STAGES) - 1):
 		for role in transition_roles:
 			if role and frappe.db.exists("Role", role):
@@ -93,4 +100,3 @@ def execute() -> None:
 
 	doc.save(ignore_permissions=True)
 	frappe.clear_cache()
-

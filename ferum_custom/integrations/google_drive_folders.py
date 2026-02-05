@@ -130,15 +130,13 @@ def _folder_web_link(folder_id: str) -> str:
 	return f"https://drive.google.com/drive/folders/{folder_id}"
 
 
-def get_drive_file(service: Any, *, file_id: str, fields: str = "id,name,mimeType,parents,webViewLink") -> dict[str, Any]:
+def get_drive_file(
+	service: Any, *, file_id: str, fields: str = "id,name,mimeType,parents,webViewLink"
+) -> dict[str, Any]:
 	file_id = str(file_id or "").strip()
 	if not file_id:
 		raise ValueError("file_id is empty")
-	return (
-		service.files()
-		.get(fileId=file_id, fields=fields, supportsAllDrives=True)
-		.execute()
-	)
+	return service.files().get(fileId=file_id, fields=fields, supportsAllDrives=True).execute()
 
 
 def update_drive_file(

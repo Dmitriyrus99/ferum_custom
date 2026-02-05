@@ -6,8 +6,8 @@ import re
 import frappe
 from frappe import _
 from frappe.desk.query_report import (
-	get_prepared_report_result,
 	generate_report_result,
+	get_prepared_report_result,
 	get_report_doc,
 	validate_filters_permissions,
 )

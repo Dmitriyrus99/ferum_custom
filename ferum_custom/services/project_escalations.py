@@ -98,7 +98,11 @@ def run_daily_project_escalations() -> None:
 
 		# Deadline 1: contractor selected/contracted
 		deadline = r.get("contractor_selected_deadline")
-		if deadline and today >= deadline and _stage_index(stage) < _stage_index("Contractor Selected/Contracted"):
+		if (
+			deadline
+			and today >= deadline
+			and _stage_index(stage) < _stage_index("Contractor Selected/Contracted")
+		):
 			subject = f"[P0] Просрочен дедлайн подрядчика: Project {name}"
 			body = (
 				f"Проект: {name}\n"
@@ -110,7 +114,11 @@ def run_daily_project_escalations() -> None:
 
 		# Deadline 2: primary survey completed
 		survey_deadline = r.get("photo_survey_deadline")
-		if survey_deadline and today >= survey_deadline and _stage_index(stage) < _stage_index("Primary Survey Completed"):
+		if (
+			survey_deadline
+			and today >= survey_deadline
+			and _stage_index(stage) < _stage_index("Primary Survey Completed")
+		):
 			subject = f"[P0] Просрочен дедлайн первички: Project {name}"
 			body = (
 				f"Проект: {name}\n"
@@ -124,9 +132,10 @@ def run_daily_project_escalations() -> None:
 		try:
 			doc = frappe.get_doc("Project", name)
 			maybe_trigger_customer_ignored_mail_task(doc)
-			if int(getattr(doc, "if_customer_ignored_trigger_mail_task", 0) or 0) == 1 and int(
-				r.get("if_customer_ignored_trigger_mail_task") or 0
-			) == 0:
+			if (
+				int(getattr(doc, "if_customer_ignored_trigger_mail_task", 0) or 0) == 1
+				and int(r.get("if_customer_ignored_trigger_mail_task") or 0) == 0
+			):
 				doc.save(ignore_permissions=True)
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "Project P0 ignored mail task failed")

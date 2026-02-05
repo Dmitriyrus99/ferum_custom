@@ -60,4 +60,3 @@ jobs:
             --exclude ferum_custom/public/dist \
             --exclude build \
             --exclude dist
-

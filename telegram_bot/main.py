@@ -14,8 +14,8 @@ from .telegram_bot.frappe import FrappeAPI
 from .telegram_bot.handlers.commands import build_router, default_commands
 from .telegram_bot.settings import Settings, load_settings
 
-
 logger = logging.getLogger("ferum.telegram.bot")
+_LOCK_FD: int | None = None
 
 
 def _frappe_api(settings: Settings, client: httpx.AsyncClient) -> FrappeAPI | None:
@@ -29,24 +29,85 @@ def _frappe_api(settings: Settings, client: httpx.AsyncClient) -> FrappeAPI | No
 	)
 
 
+def _dns_preflight() -> None:
+	"""Best-effort DNS check for Telegram API.
+
+	If DNS is broken in container/VM (common when `/etc/resolv.conf` points to 127.0.0.53 without systemd-resolved),
+	the bot can receive webhooks but won't be able to send replies.
+	"""
+	try:
+		socket.getaddrinfo("api.telegram.org", 443)
+	except Exception as exc:
+		logger.error(
+			"DNS resolution failed for api.telegram.org: %s. "
+			"Check /etc/resolv.conf and container DNS configuration.",
+			exc,
+		)
+
+
+def _acquire_single_instance_lock() -> None:
+	"""Prevent multiple bot instances from binding the same webhook port.
+
+	This commonly happens when `bench start` is run in multiple shells.
+	We use a simple filesystem lock so a second instance blocks until the first exits.
+	"""
+	global _LOCK_FD
+	try:
+		import fcntl
+		from pathlib import Path
+	except Exception:  # pragma: no cover
+		return
+
+	lock_path = (os.getenv("FERUM_TELEGRAM_LOCK_FILE") or "").strip()
+	if not lock_path:
+		try:
+			from .telegram_bot.settings import _find_dotenv_path
+
+			lock_path = str(Path(_find_dotenv_path()).resolve().parent / ".ferum_telegram_bot.lock")
+		except Exception:
+			lock_path = "/tmp/ferum_telegram_bot.lock"
+
+	fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o664)
+	try:
+		fcntl.flock(fd, fcntl.LOCK_EX)
+		try:
+			os.ftruncate(fd, 0)
+			os.write(fd, str(os.getpid()).encode())
+		except Exception:
+			pass
+	except Exception:
+		os.close(fd)
+		raise
+
+	_LOCK_FD = fd
+
+
 async def _run_webhook(dp: Dispatcher, bot: Bot, settings: Settings) -> None:
-	from aiohttp import web
-	from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 	from aiogram.exceptions import TelegramNetworkError
+	from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+	from aiohttp import web
 
 	assert settings.webhook_url, "webhook_url required"
 
 	app = web.Application()
 	app.router.add_get("/tg-bot/health", lambda request: web.json_response({"status": "ok"}))
-	SimpleRequestHandler(
-		dispatcher=dp, bot=bot, secret_token=settings.webhook_secret
-	).register(app, path=settings.webhook_path)
+	SimpleRequestHandler(dispatcher=dp, bot=bot, secret_token=settings.webhook_secret).register(
+		app, path=settings.webhook_path
+	)
 	setup_application(app, dp, bot=bot)
 
 	runner = web.AppRunner(app)
 	await runner.setup()
 	site = web.TCPSite(runner, host=settings.webhook_host, port=settings.webhook_port)
-	await site.start()
+	try:
+		await site.start()
+	except OSError as exc:
+		if getattr(exc, "errno", None) == 98:  # address already in use
+			logger.error(
+				"Webhook port %s is already in use. Check for duplicate bot processes and bench restarts.",
+				settings.webhook_port,
+			)
+		raise
 
 	webhook_full_url = f"{settings.webhook_url}{settings.webhook_path}"
 	logger.info(
@@ -80,10 +141,11 @@ async def _run_webhook(dp: Dispatcher, bot: Bot, settings: Settings) -> None:
 
 async def _run_once() -> None:
 	settings = load_settings()
+	_dns_preflight()
 
 	# Force IPv4 for Telegram API calls to avoid intermittent IPv6/DNS issues seen in production logs.
 	telegram_session = AiohttpSession(timeout=20.0)
-	telegram_session._connector_init["family"] = socket.AF_INET  # noqa: SLF001
+	telegram_session._connector_init["family"] = socket.AF_INET
 	bot = Bot(token=settings.telegram_bot_token, session=telegram_session)
 	dp = Dispatcher(storage=MemoryStorage())
 	try:
@@ -95,7 +157,7 @@ async def _run_once() -> None:
 				await bot.set_my_commands(default_commands())
 			except Exception as e:
 				# Avoid noisy crash-loops on frequent restarts.
-				from aiogram.exceptions import TelegramRetryAfter  # noqa: PLC0415
+				from aiogram.exceptions import TelegramRetryAfter
 
 				if isinstance(e, TelegramRetryAfter):
 					logger.warning(
@@ -127,6 +189,7 @@ async def _run_once() -> None:
 
 
 if __name__ == "__main__":
+
 	def _parse_backoff(raw: str) -> float:
 		try:
 			value = float(raw)
@@ -147,4 +210,5 @@ if __name__ == "__main__":
 				await asyncio.sleep(backoff)
 
 	logging.basicConfig(level=logging.INFO)
+	_acquire_single_instance_lock()
 	asyncio.run(_run_forever())

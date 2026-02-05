@@ -11,244 +11,248 @@ from ferum_custom.notifications import send_telegram_notification_to_fastapi
 
 
 class ServiceRequest(Document):
-    def validate(self):
-        self._sync_contract_customer_project()
-        self._validate_workflow_transitions()
-        self._calculate_duration_hours()
-        self._calculate_sla_deadline()
+	def validate(self):
+		self._sync_contract_customer_project()
+		self._validate_workflow_transitions()
+		self._calculate_duration_hours()
+		self._calculate_sla_deadline()
 
-    def on_update(self):
-        self._check_sla_breach()
+	def on_update(self):
+		self._check_sla_breach()
 
-    def _service_object_dt(self) -> str:
-        if frappe.db.exists("DocType", "Service Object"):
-            return "Service Object"
-        return "ServiceObject"
+	def _service_object_dt(self) -> str:
+		if frappe.db.exists("DocType", "Service Object"):
+			return "Service Object"
+		return "ServiceObject"
 
-    def _sync_contract_customer_project(self) -> None:
-        # If contract is not set but service_object is known, try to infer contract from active link.
-        if not getattr(self, "contract", None) and getattr(self, "service_object", None) and self.meta.has_field(
-            "contract"
-        ):
-            links = frappe.get_all(
-                "ContractServiceObject",
-                filters={"service_object": self.service_object, "status": "Active"},
-                pluck="contract",
-            )
-            self.contract = _pick_contract_for_service_object(
-                service_object=self.service_object,
-                contracts=links,
-                company=getattr(self, "company", None),
-            )
+	def _sync_contract_customer_project(self) -> None:
+		# If contract is not set but service_object is known, try to infer contract from active link.
+		if (
+			not getattr(self, "contract", None)
+			and getattr(self, "service_object", None)
+			and self.meta.has_field("contract")
+		):
+			links = frappe.get_all(
+				"ContractServiceObject",
+				filters={"service_object": self.service_object, "status": "Active"},
+				pluck="contract",
+			)
+			self.contract = _pick_contract_for_service_object(
+				service_object=self.service_object,
+				contracts=links,
+				company=getattr(self, "company", None),
+			)
 
-        if getattr(self, "contract", None):
-            contract = frappe.get_doc("Contract", self.contract)
-            if contract.party_type and contract.party_type != "Customer":
-                frappe.throw(_("Contract party_type must be Customer."))
+		if getattr(self, "contract", None):
+			contract = frappe.get_doc("Contract", self.contract)
+			if contract.party_type and contract.party_type != "Customer":
+				frappe.throw(_("Contract party_type must be Customer."))
 
-            if contract.party_name:
-                self.customer = contract.party_name
+			if contract.party_name:
+				self.customer = contract.party_name
 
-            if self.meta.has_field("erpnext_project") and frappe.db.has_column("Project", "contract"):
-                self.erpnext_project = frappe.db.get_value("Project", {"contract": contract.name}, "name")
+			if self.meta.has_field("erpnext_project") and frappe.db.has_column("Project", "contract"):
+				self.erpnext_project = frappe.db.get_value("Project", {"contract": contract.name}, "name")
 
-            if getattr(self, "service_object", None):
-                so_customer = frappe.db.get_value(self._service_object_dt(), self.service_object, "customer")
-                if so_customer and contract.party_name and so_customer != contract.party_name:
-                    frappe.throw(
-                        _("Service Object customer {0} must match Contract customer {1}.").format(
-                            frappe.bold(so_customer), frappe.bold(contract.party_name)
-                        )
-                    )
+			if getattr(self, "service_object", None):
+				so_customer = frappe.db.get_value(self._service_object_dt(), self.service_object, "customer")
+				if so_customer and contract.party_name and so_customer != contract.party_name:
+					frappe.throw(
+						_("Service Object customer {0} must match Contract customer {1}.").format(
+							frappe.bold(so_customer), frappe.bold(contract.party_name)
+						)
+					)
 
-    def _validate_workflow_transitions(self) -> None:
-        if not self.meta.has_field("status") or self.is_new():
-            return
+	def _validate_workflow_transitions(self) -> None:
+		if not self.meta.has_field("status") or self.is_new():
+			return
 
-        old_status = frappe.db.get_value(self.doctype, self.name, "status")
-        if not old_status or old_status == self.status:
-            return
+		old_status = frappe.db.get_value(self.doctype, self.name, "status")
+		if not old_status or old_status == self.status:
+			return
 
-        if old_status == "Open" and self.status == "In Progress":
-            if self.meta.has_field("assigned_to") and not getattr(self, "assigned_to", None):
-                frappe.throw(_("Cannot set status to 'In Progress' without assigning an engineer."))
-            return
+		if old_status == "Open" and self.status == "In Progress":
+			if self.meta.has_field("assigned_to") and not getattr(self, "assigned_to", None):
+				frappe.throw(_("Cannot set status to 'In Progress' without assigning an engineer."))
+			return
 
-        if old_status == "In Progress" and self.status == "Completed":
-            if self.meta.has_field("linked_report") and not getattr(self, "linked_report", None):
-                frappe.throw(_("Cannot set status to 'Completed' without linking a Service Report."))
-            return
+		if old_status == "In Progress" and self.status == "Completed":
+			if self.meta.has_field("linked_report") and not getattr(self, "linked_report", None):
+				frappe.throw(_("Cannot set status to 'Completed' without linking a Service Report."))
+			return
 
-        if self.status == "Closed":
-            if (
-                self.meta.has_field("is_billable")
-                and int(getattr(self, "is_billable", 0) or 0) == 1
-                and self.meta.has_field("linked_report")
-                and not getattr(self, "linked_report", None)
-            ):
-                frappe.throw(_("Billable request requires linked Service Report before closing."))
+		if self.status == "Closed":
+			if (
+				self.meta.has_field("is_billable")
+				and int(getattr(self, "is_billable", 0) or 0) == 1
+				and self.meta.has_field("linked_report")
+				and not getattr(self, "linked_report", None)
+			):
+				frappe.throw(_("Billable request requires linked Service Report before closing."))
 
-    def _calculate_duration_hours(self) -> None:
-        if not self.meta.has_field("duration_hours"):
-            return
+	def _calculate_duration_hours(self) -> None:
+		if not self.meta.has_field("duration_hours"):
+			return
 
-        start = getattr(self, "actual_start_datetime", None)
-        end = getattr(self, "actual_end_datetime", None)
-        if not start or not end:
-            return
+		start = getattr(self, "actual_start_datetime", None)
+		end = getattr(self, "actual_end_datetime", None)
+		if not start or not end:
+			return
 
-        try:
-            delta = get_datetime(end) - get_datetime(start)
-            self.duration_hours = round(delta.total_seconds() / 3600.0, 2)
-        except Exception:
-            return
+		try:
+			delta = get_datetime(end) - get_datetime(start)
+			self.duration_hours = round(delta.total_seconds() / 3600.0, 2)
+		except Exception:
+			return
 
-    def _calculate_sla_deadline(self) -> None:
-        if not self.meta.has_field("sla_deadline"):
-            return
+	def _calculate_sla_deadline(self) -> None:
+		if not self.meta.has_field("sla_deadline"):
+			return
 
-        if getattr(self, "status", None) == "Cancelled":
-            return
+		if getattr(self, "status", None) == "Cancelled":
+			return
 
-        base = getattr(self, "reported_datetime", None) or getattr(self, "creation", None)
-        if not base:
-            return
+		base = getattr(self, "reported_datetime", None) or getattr(self, "creation", None)
+		if not base:
+			return
 
-        typ = str(getattr(self, "type", "") or "").strip()
-        priority = str(getattr(self, "priority", "") or "").strip()
-        base_dt = get_datetime(base)
+		typ = str(getattr(self, "type", "") or "").strip()
+		priority = str(getattr(self, "priority", "") or "").strip()
+		base_dt = get_datetime(base)
 
-        if typ == "Emergency" and priority == "High":
-            self.sla_deadline = add_to_date(base_dt, hours=4)
-        elif typ == "Emergency" and priority == "Medium":
-            self.sla_deadline = add_to_date(base_dt, hours=8)
-        elif typ in {"Routine Maintenance", "Routine"} and priority == "High":
-            self.sla_deadline = add_to_date(base_dt, days=1)
-        else:
-            self.sla_deadline = add_to_date(base_dt, days=3)
+		if typ == "Emergency" and priority == "High":
+			self.sla_deadline = add_to_date(base_dt, hours=4)
+		elif typ == "Emergency" and priority == "Medium":
+			self.sla_deadline = add_to_date(base_dt, hours=8)
+		elif typ in {"Routine Maintenance", "Routine"} and priority == "High":
+			self.sla_deadline = add_to_date(base_dt, days=1)
+		else:
+			self.sla_deadline = add_to_date(base_dt, days=3)
 
-    def _check_sla_breach(self) -> None:
-        if not self.meta.has_field("sla_deadline"):
-            return
+	def _check_sla_breach(self) -> None:
+		if not self.meta.has_field("sla_deadline"):
+			return
 
-        if getattr(self, "status", None) in {"Completed", "Closed", "Cancelled"}:
-            return
+		if getattr(self, "status", None) in {"Completed", "Closed", "Cancelled"}:
+			return
 
-        deadline = getattr(self, "sla_deadline", None)
-        if not deadline or not _is_past_deadline(deadline):
-            return
+		deadline = getattr(self, "sla_deadline", None)
+		if not deadline or not _is_past_deadline(deadline):
+			return
 
-        cache = frappe.cache()
-        cache_key = _cache_sla_key(self.name, deadline)
-        if cache and cache.get_value(cache_key):
-            return
-        if cache:
-            cache.set_value(cache_key, "1", expires_in_sec=6 * 60 * 60)
+		cache = frappe.cache()
+		cache_key = _cache_sla_key(self.name, deadline)
+		if cache and cache.get_value(cache_key):
+			return
+		if cache:
+			cache.set_value(cache_key, "1", expires_in_sec=6 * 60 * 60)
 
-        title = getattr(self, "title", "") or ""
-        message = (
-            f"SLA for Service Request {self.name} has been breached! "
-            f"Title: {title}. Priority: {getattr(self, 'priority', None)}. Due: {deadline}"
-        )
-        frappe.log_error(message, "SLA Breach Alert")
-        try:
-            frappe.msgprint(_(message), alert=True, indicator="red")
-        except Exception:
-            pass
-        _notify_sla_breach(message)
+		title = getattr(self, "title", "") or ""
+		message = (
+			f"SLA for Service Request {self.name} has been breached! "
+			f"Title: {title}. Priority: {getattr(self, 'priority', None)}. Due: {deadline}"
+		)
+		frappe.log_error(message, "SLA Breach Alert")
+		try:
+			frappe.msgprint(_(message), alert=True, indicator="red")
+		except Exception:
+			pass
+		_notify_sla_breach(message)
 
 
-def _pick_contract_for_service_object(*, service_object: str, contracts: list[str], company: str | None) -> str | None:
-    """Deterministic inference when Service Object can belong to multiple active contracts.
+def _pick_contract_for_service_object(
+	*, service_object: str, contracts: list[str], company: str | None
+) -> str | None:
+	"""Deterministic inference when Service Object can belong to multiple active contracts.
 
-    Priority:
-    1) If only one contract -> use it
-    2) If company is known -> choose contract with same company
-    3) Choose most recent by (start_date desc, modified desc, name desc)
-    If still ambiguous/empty -> return None (user must select).
-    """
-    contracts = [c for c in contracts if c]
-    if not contracts:
-        return None
-    if len(contracts) == 1:
-        return contracts[0]
+	Priority:
+	1) If only one contract -> use it
+	2) If company is known -> choose contract with same company
+	3) Choose most recent by (start_date desc, modified desc, name desc)
+	If still ambiguous/empty -> return None (user must select).
+	"""
+	contracts = [c for c in contracts if c]
+	if not contracts:
+		return None
+	if len(contracts) == 1:
+		return contracts[0]
 
-    if company and frappe.db.has_column("Contract", "company"):
-        same_company = frappe.get_all(
-            "Contract",
-            filters={"name": ["in", contracts], "company": company},
-            pluck="name",
-        )
-        if len(same_company) == 1:
-            return same_company[0]
-        if len(same_company) > 1:
-            contracts = same_company
+	if company and frappe.db.has_column("Contract", "company"):
+		same_company = frappe.get_all(
+			"Contract",
+			filters={"name": ["in", contracts], "company": company},
+			pluck="name",
+		)
+		if len(same_company) == 1:
+			return same_company[0]
+		if len(same_company) > 1:
+			contracts = same_company
 
-    # Prefer most recent contract
-    row = frappe.db.sql(
-        """
+	# Prefer most recent contract
+	row = frappe.db.sql(
+		"""
         select name
         from tabContract
         where name in %(names)s
         order by ifnull(start_date, '1900-01-01') desc, modified desc, name desc
         limit 1
         """,
-        {"names": tuple(contracts)},
-    )
-    return row[0][0] if row else None
+		{"names": tuple(contracts)},
+	)
+	return row[0][0] if row else None
 
 
 def _get_int_setting(*keys: str) -> int | None:
-    for key in keys:
-        val = frappe.conf.get(key) if hasattr(frappe, "conf") else None
-        if val is None:
-            val = os.getenv(key)
-        if val is None:
-            continue
-        try:
-            return int(str(val).strip())
-        except ValueError:
-            continue
-    return None
+	for key in keys:
+		val = frappe.conf.get(key) if hasattr(frappe, "conf") else None
+		if val is None:
+			val = os.getenv(key)
+		if val is None:
+			continue
+		try:
+			return int(str(val).strip())
+		except ValueError:
+			continue
+	return None
 
 
 def _get_setting(*keys: str) -> str | None:
-    for key in keys:
-        val = frappe.conf.get(key) if hasattr(frappe, "conf") else None
-        if val is None:
-            val = os.getenv(key)
-        if val is None:
-            continue
-        val = str(val).strip()
-        if val:
-            return val
-    return None
+	for key in keys:
+		val = frappe.conf.get(key) if hasattr(frappe, "conf") else None
+		if val is None:
+			val = os.getenv(key)
+		if val is None:
+			continue
+		val = str(val).strip()
+		if val:
+			return val
+	return None
 
 
 def _dt_now() -> object:
-    return get_datetime(now())
+	return get_datetime(now())
 
 
 def _is_past_deadline(deadline: object) -> bool:
-    try:
-        return get_datetime(deadline) < _dt_now()
-    except Exception:
-        return False
+	try:
+		return get_datetime(deadline) < _dt_now()
+	except Exception:
+		return False
 
 
 def _cache_sla_key(name: str, deadline: object) -> str:
-    return f"ferum:sla_breach_notified:{name}:{deadline}"
+	return f"ferum:sla_breach_notified:{name}:{deadline}"
 
 
 def _notify_sla_breach(message: str) -> None:
-    chat_id = _get_int_setting("ferum_telegram_default_chat_id", "FERUM_TELEGRAM_DEFAULT_CHAT_ID")
-    if chat_id:
-        send_telegram_notification_to_fastapi(chat_id, message)
+	chat_id = _get_int_setting("ferum_telegram_default_chat_id", "FERUM_TELEGRAM_DEFAULT_CHAT_ID")
+	if chat_id:
+		send_telegram_notification_to_fastapi(chat_id, message)
 
-    recipient_email = _get_setting("ferum_sla_alert_email", "FERUM_SLA_ALERT_EMAIL")
-    if recipient_email:
-        frappe.sendmail(
-            recipients=recipient_email,
-            subject="SLA Breach Alert",
-            message=message,
-        )
+	recipient_email = _get_setting("ferum_sla_alert_email", "FERUM_SLA_ALERT_EMAIL")
+	if recipient_email:
+		frappe.sendmail(
+			recipients=recipient_email,
+			subject="SLA Breach Alert",
+			message=message,
+		)

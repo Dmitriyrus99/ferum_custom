@@ -46,4 +46,3 @@ frappe.ui.form.on('Project', {
 		doc.insert(ignore_permissions=True)
 
 	frappe.clear_cache()
-

@@ -71,8 +71,7 @@ def send_welcome_email(project: str) -> dict:
 	project_doc.db_set("welcome_email_sent_date", nowdate(), update_modified=True)
 	project_doc.add_comment(
 		"Info",
-		f"Welcome email sent to {', '.join(recipients)}"
-		+ (f" (cc: {', '.join(cc)})" if cc else ""),
+		f"Welcome email sent to {', '.join(recipients)}" + (f" (cc: {', '.join(cc)})" if cc else ""),
 	)
 
 	return {"ok": True, "recipients": recipients, "cc": cc}
