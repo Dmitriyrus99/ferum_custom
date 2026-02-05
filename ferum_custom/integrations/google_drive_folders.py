@@ -11,6 +11,8 @@ from typing import Any
 import frappe
 from frappe import _
 
+from ferum_custom.config.settings import get_settings
+
 try:
 	from google.oauth2 import service_account
 	from googleapiclient.discovery import build
@@ -25,7 +27,6 @@ except Exception:  # pragma: no cover
 
 
 _FOLDER_MIME = "application/vnd.google-apps.folder"
-_DOTENV_LOADED = False
 
 
 @dataclass(frozen=True)
@@ -40,33 +41,46 @@ class DriveFile:
 	web_view_link: str
 
 
-def _ensure_dotenv_loaded() -> None:
-	"""Load bench `.env` for long-running processes where env vars may not be passed explicitly."""
-	global _DOTENV_LOADED
-	if _DOTENV_LOADED:
-		return
-	_DOTENV_LOADED = True
-	try:
-		from dotenv import load_dotenv  # type: ignore
-	except Exception:
-		return
-
-	for parent in Path(__file__).resolve().parents[:8]:
-		candidate = parent / ".env"
-		if candidate.exists():
-			load_dotenv(dotenv_path=str(candidate), override=False)
-			return
-
-
 def _get_conf(key: str) -> str | None:
-	_ensure_dotenv_loaded()
-	val = frappe.conf.get(key) if hasattr(frappe, "conf") else None
-	if val is None:
-		val = os.getenv(key)
-	if val is None:
-		return None
-	val = str(val).strip()
-	return val or None
+	settings = get_settings()
+	return settings.get(key)
+
+
+def _looks_like_json(raw: str) -> bool:
+	raw = (raw or "").lstrip()
+	return raw.startswith("{") and ("client_email" in raw or "private_key" in raw)
+
+
+def _ensure_service_account_file_from_json(raw_json: str) -> str:
+	raw_json = (raw_json or "").strip()
+	if not raw_json:
+		raise ValueError("service account json is empty")
+
+	# Validate JSON without leaking it in logs.
+	try:
+		payload = json.loads(raw_json) or {}
+	except Exception as exc:
+		raise ValueError("invalid service account json") from exc
+	if not isinstance(payload, dict) or not payload.get("client_email"):
+		raise ValueError("invalid service account json structure")
+
+	keys_dir = Path(frappe.get_site_path("private", "keys"))
+	keys_dir.mkdir(parents=True, exist_ok=True)
+	path = keys_dir / "google_drive_service_account.json"
+
+	# Avoid rewriting if content already matches.
+	try:
+		current = path.read_text(encoding="utf-8")
+	except Exception:
+		current = None
+	if current is None or current.strip() != raw_json:
+		path.write_text(raw_json + "\n", encoding="utf-8")
+		try:
+			os.chmod(path, 0o600)
+		except Exception:
+			pass
+
+	return str(path)
 
 
 def service_account_key_path() -> str:
@@ -74,22 +88,28 @@ def service_account_key_path() -> str:
 	if filename:
 		return frappe.get_site_path("private", "keys", filename)
 
-	return (
-		_get_conf("google_drive_service_account_key_path")
-		or _get_conf("FERUM_GOOGLE_DRIVE_SERVICE_ACCOUNT_KEY_PATH")
+	raw = (
+		_get_conf("FERUM_GOOGLE_DRIVE_SERVICE_ACCOUNT_KEY_PATH")
 		or _get_conf("FERUM_GOOGLE_SERVICE_ACCOUNT_JSON")
 		or _get_conf("GOOGLE_DRIVE_SERVICE_ACCOUNT_KEY_PATH")
-		or frappe.get_site_path("private", "keys", "google_drive_service_account.json")
+		or _get_conf("google_drive_service_account_key_path")
 	)
+	raw = str(raw or "").strip()
+	if raw and _looks_like_json(raw):
+		return _ensure_service_account_file_from_json(raw)
+	if raw:
+		return raw
+
+	return frappe.get_site_path("private", "keys", "google_drive_service_account.json")
 
 
 def root_folder_id() -> str | None:
 	return (
-		_get_conf("google_drive_folder_id")
-		or _get_conf("ferum_google_drive_folder_id")
+		_get_conf("FERUM_GOOGLE_DRIVE_ROOT_FOLDER_ID")
 		or _get_conf("FERUM_GOOGLE_DRIVE_FOLDER_ID")
-		or _get_conf("FERUM_GOOGLE_DRIVE_ROOT_FOLDER_ID")
 		or _get_conf("GOOGLE_DRIVE_FOLDER_ID")
+		or _get_conf("google_drive_folder_id")
+		or _get_conf("ferum_google_drive_folder_id")
 	)
 
 

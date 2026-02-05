@@ -1,100 +1,53 @@
-import json
-import os
-from pathlib import Path
-
 import frappe
 import requests
 from frappe.utils import cint, get_url_to_form
 
+from ferum_custom.config.settings import get_settings
+from ferum_custom.config.types import parse_int
+
 REQUEST_TIMEOUT_SECONDS = 20
-_DOTENV_LOADED = False
-
-
-def _ensure_dotenv_loaded() -> None:
-	"""Load bench `.env` for non-web processes (workers/scheduler) where supervisor doesn't pass env vars."""
-	global _DOTENV_LOADED
-	if _DOTENV_LOADED:
-		return
-	_DOTENV_LOADED = True
-	try:
-		from dotenv import load_dotenv  # type: ignore
-	except Exception:
-		return
-
-	# notifications.py -> ferum_custom -> ferum_custom -> ferum_custom -> apps/ferum_custom -> apps -> bench root
-	bench_root = Path(__file__).resolve().parents[5]
-	dotenv_path = bench_root / ".env"
-	if dotenv_path.exists():
-		load_dotenv(dotenv_path=str(dotenv_path), override=False)
-
-
-def _get_setting(*keys: str) -> str | None:
-	_ensure_dotenv_loaded()
-	for key in keys:
-		val = frappe.conf.get(key) if hasattr(frappe, "conf") else None
-		if val:
-			return str(val).strip()
-		val = os.getenv(key)
-		if val:
-			return str(val).strip()
-	return None
-
-
-def _get_int_setting(*keys: str) -> int | None:
-	val = _get_setting(*keys)
-	if not val:
-		return None
-	try:
-		return int(val)
-	except ValueError:
-		return None
 
 
 def _fastapi_backend_url() -> str | None:
-	return _get_setting(
-		"ferum_fastapi_base_url",
+	settings = get_settings()
+	return settings.get(
 		"FERUM_FASTAPI_BASE_URL",
-		"ferum_fastapi_backend_url",
 		"FERUM_FASTAPI_BACKEND_URL",
 		"FASTAPI_BACKEND_URL",
+		"ferum_fastapi_base_url",
+		"ferum_fastapi_backend_url",
 	)
 
 
 def _fastapi_auth_token() -> str | None:
-	return _get_setting(
-		"ferum_fastapi_auth_token",
-		"FERUM_FASTAPI_AUTH_TOKEN",
-		"FASTAPI_AUTH_TOKEN",
-	)
+	settings = get_settings()
+	return settings.get("FERUM_FASTAPI_AUTH_TOKEN", "FASTAPI_AUTH_TOKEN", "ferum_fastapi_auth_token")
 
 
 def _default_chat_id() -> int | None:
-	return _get_int_setting(
-		"ferum_telegram_default_chat_id",
-		"FERUM_TELEGRAM_DEFAULT_CHAT_ID",
-	)
+	settings = get_settings()
+	return parse_int(settings.get("FERUM_TELEGRAM_DEFAULT_CHAT_ID", "ferum_telegram_default_chat_id"))
+
+
+def _get_int_setting(*keys: str) -> int | None:
+	settings = get_settings()
+	return parse_int(settings.get(*keys))
 
 
 def _telegram_bot_token() -> str | None:
-	token = _get_setting("ferum_telegram_bot_token", "FERUM_TELEGRAM_BOT_TOKEN", "TELEGRAM_BOT_TOKEN")
-	if token:
-		return token
-	try:
-		settings = frappe.get_cached_doc("Ferum Custom Settings")
-		token = str(getattr(settings, "telegram_bot_token", "") or "").strip()
-		return token or None
-	except Exception:
-		return None
+	settings = get_settings()
+	return settings.get("FERUM_TELEGRAM_BOT_TOKEN", "TELEGRAM_BOT_TOKEN", "ferum_telegram_bot_token")
 
 
 def _telegram_enabled() -> bool:
 	# Opt-out at environment level (handy for CI/scripts).
-	disabled = (_get_setting("FERUM_DISABLE_TELEGRAM_NOTIFICATIONS") or "").strip().lower()
+	settings = get_settings()
+	disabled = (settings.get("FERUM_DISABLE_TELEGRAM_NOTIFICATIONS") or "").strip().lower()
 	if disabled in {"1", "true", "yes", "on"}:
 		return False
 	try:
-		settings = frappe.get_cached_doc("Ferum Custom Settings")
-		return cint(getattr(settings, "enable_telegram_notifications", 0) or 0) == 1
+		doc = frappe.get_cached_doc("Ferum Custom Settings")
+		return cint(getattr(doc, "enable_telegram_notifications", 0) or 0) == 1
 	except Exception:
 		# Backward-compatible default: enabled if token exists.
 		return bool(_telegram_bot_token())

@@ -4,7 +4,8 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from dotenv import load_dotenv
+from ferum_custom.config.dotenv import load_dotenv_once
+from ferum_custom.config.settings import get_settings
 
 
 @dataclass(frozen=True)
@@ -50,55 +51,34 @@ def _find_dotenv_path() -> str:
 
 
 def load_settings() -> Settings:
-	# Load bench `.env` explicitly.
+	# Prefer explicit dotenv path resolution used by the bot, but share the common loader.
 	dotenv_path = _find_dotenv_path()
-	load_dotenv(dotenv_path=dotenv_path, override=False)
+	os.environ.setdefault("DOTENV_PATH", dotenv_path)
+	load_dotenv_once()
+	conf = get_settings()
 
-	telegram_bot_token = os.getenv("FERUM_TELEGRAM_BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN") or ""
-	mode = (os.getenv("MODE") or os.getenv("FERUM_TELEGRAM_MODE") or "polling").strip().lower()
+	telegram_bot_token = conf.get("FERUM_TELEGRAM_BOT_TOKEN", "TELEGRAM_BOT_TOKEN") or ""
+	mode = (conf.get("MODE", "FERUM_TELEGRAM_MODE") or "polling").strip().lower()
 
-	frappe_base_url = (os.getenv("FERUM_FRAPPE_BASE_URL") or os.getenv("ERP_API_URL") or "").strip() or None
-	frappe_api_key = (os.getenv("FERUM_FRAPPE_API_KEY") or os.getenv("ERP_API_KEY") or "").strip() or None
-	frappe_api_secret = (
-		os.getenv("FERUM_FRAPPE_API_SECRET") or os.getenv("ERP_API_SECRET") or ""
-	).strip() or None
-	default_company = (
-		os.getenv("FERUM_DEFAULT_COMPANY") or os.getenv("DEFAULT_COMPANY") or ""
-	).strip() or None
+	frappe_base_url = (conf.get("FERUM_FRAPPE_BASE_URL", "ERP_API_URL") or "").strip() or None
+	frappe_api_key = (conf.get("FERUM_FRAPPE_API_KEY", "ERP_API_KEY") or "").strip() or None
+	frappe_api_secret = (conf.get("FERUM_FRAPPE_API_SECRET", "ERP_API_SECRET") or "").strip() or None
+	default_company = (conf.get("FERUM_DEFAULT_COMPANY", "DEFAULT_COMPANY") or "").strip() or None
 
-	webhook_url = (
-		os.getenv("FERUM_TELEGRAM_WEBHOOK_URL") or os.getenv("TELEGRAM_WEBHOOK_URL") or ""
-	).strip() or None
+	webhook_url = (conf.get("FERUM_TELEGRAM_WEBHOOK_URL", "TELEGRAM_WEBHOOK_URL") or "").strip() or None
 	webhook_path = (
-		os.getenv("FERUM_TELEGRAM_WEBHOOK_PATH") or os.getenv("TELEGRAM_WEBHOOK_PATH") or "/tg-bot/webhook"
+		conf.get("FERUM_TELEGRAM_WEBHOOK_PATH", "TELEGRAM_WEBHOOK_PATH") or "/tg-bot/webhook"
 	).strip()
 	if not webhook_path.startswith("/"):
 		webhook_path = "/" + webhook_path
 	webhook_secret = (
-		os.getenv("FERUM_TELEGRAM_WEBHOOK_SECRET") or os.getenv("TELEGRAM_WEBHOOK_SECRET") or ""
+		conf.get("FERUM_TELEGRAM_WEBHOOK_SECRET", "TELEGRAM_WEBHOOK_SECRET") or ""
 	).strip() or None
-	webhook_host = (os.getenv("FERUM_TELEGRAM_WEBHOOK_HOST") or "0.0.0.0").strip() or "0.0.0.0"
-	webhook_port_raw = (os.getenv("FERUM_TELEGRAM_WEBHOOK_PORT") or "8080").strip()
-	try:
-		webhook_port = int(webhook_port_raw)
-	except ValueError:
-		webhook_port = 8080
+	webhook_host = (conf.get("FERUM_TELEGRAM_WEBHOOK_HOST") or "0.0.0.0").strip() or "0.0.0.0"
+	webhook_port = conf.get_int("FERUM_TELEGRAM_WEBHOOK_PORT", "TELEGRAM_WEBHOOK_PORT", default=8080) or 8080
 
-	allowed_chat_ids_raw = (os.getenv("FERUM_TELEGRAM_ALLOWED_CHAT_IDS") or "").strip()
-	allowed_chat_ids: set[int] | None = None
-	if allowed_chat_ids_raw:
-		allowed_chat_ids = set()
-		for part in allowed_chat_ids_raw.split(","):
-			part = part.strip()
-			if not part:
-				continue
-			try:
-				allowed_chat_ids.add(int(part))
-			except ValueError:
-				continue
-
-	require_registration_raw = (os.getenv("FERUM_TELEGRAM_REQUIRE_REGISTRATION") or "").strip().lower()
-	require_registration = require_registration_raw in {"1", "true", "yes", "on"}
+	allowed_chat_ids = conf.get_int_set("FERUM_TELEGRAM_ALLOWED_CHAT_IDS")
+	require_registration = conf.get_bool("FERUM_TELEGRAM_REQUIRE_REGISTRATION", default=False)
 
 	missing = []
 	if not telegram_bot_token:

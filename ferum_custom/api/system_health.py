@@ -1,43 +1,13 @@
 from __future__ import annotations
 
-import os
 import subprocess
-from pathlib import Path
 
 import frappe
 from frappe import _
 from frappe.utils import now_datetime
 
-_DOTENV_LOADED = False
-
-
-def _ensure_dotenv_loaded() -> None:
-	"""Load bench `.env` for long-running processes where env vars may not be passed explicitly."""
-	global _DOTENV_LOADED
-	if _DOTENV_LOADED:
-		return
-	_DOTENV_LOADED = True
-	try:
-		from dotenv import load_dotenv  # type: ignore
-	except Exception:
-		return
-
-	for parent in Path(__file__).resolve().parents[:8]:
-		candidate = parent / ".env"
-		if candidate.exists():
-			load_dotenv(dotenv_path=str(candidate), override=False)
-			return
-
-
-def _get_conf(key: str) -> str | None:
-	_ensure_dotenv_loaded()
-	val = frappe.conf.get(key) if hasattr(frappe, "conf") else None
-	if val is None:
-		val = os.getenv(key)
-	if val is None:
-		return None
-	val = str(val).strip()
-	return val or None
+from ferum_custom.config.settings import get_settings
+from ferum_custom.config.validation import validate_security
 
 
 def _has_role(role: str, user: str | None = None) -> bool:
@@ -72,12 +42,13 @@ def _wkhtmltopdf_status() -> dict:
 
 
 def _telegram_bot_config_status() -> dict:
-	token = _get_conf("FERUM_TELEGRAM_BOT_TOKEN") or _get_conf("TELEGRAM_BOT_TOKEN")
-	mode = (_get_conf("FERUM_TELEGRAM_MODE") or _get_conf("MODE") or "polling").strip().lower()
+	settings = get_settings()
+	token = settings.get("FERUM_TELEGRAM_BOT_TOKEN", "TELEGRAM_BOT_TOKEN")
+	mode = (settings.get("FERUM_TELEGRAM_MODE", "MODE") or "polling").strip().lower()
 
-	frappe_url = _get_conf("FERUM_FRAPPE_BASE_URL") or _get_conf("ERP_API_URL")
-	api_key = _get_conf("FERUM_FRAPPE_API_KEY") or _get_conf("ERP_API_KEY")
-	api_secret = _get_conf("FERUM_FRAPPE_API_SECRET") or _get_conf("ERP_API_SECRET")
+	frappe_url = settings.get("FERUM_FRAPPE_BASE_URL", "ERP_API_URL")
+	api_key = settings.get("FERUM_FRAPPE_API_KEY", "ERP_API_KEY")
+	api_secret = settings.get("FERUM_FRAPPE_API_SECRET", "ERP_API_SECRET")
 
 	return {
 		"configured": bool(token),
@@ -87,28 +58,31 @@ def _telegram_bot_config_status() -> dict:
 
 
 def _fastapi_config_status() -> dict:
-	base_url = (
-		_get_conf("FERUM_FASTAPI_BASE_URL")
-		or _get_conf("FERUM_FASTAPI_BACKEND_URL")
-		or _get_conf("FASTAPI_BACKEND_URL")
-	)
-	token = _get_conf("FERUM_FASTAPI_AUTH_TOKEN") or _get_conf("FASTAPI_AUTH_TOKEN")
+	settings = get_settings()
+	base_url = settings.get("FERUM_FASTAPI_BASE_URL", "FERUM_FASTAPI_BACKEND_URL", "FASTAPI_BACKEND_URL")
+	token = settings.get("FERUM_FASTAPI_AUTH_TOKEN", "FASTAPI_AUTH_TOKEN")
 	return {"configured": bool(base_url and token)}
 
 
 def _vault_config_status() -> dict:
-	addr = _get_conf("VAULT_ADDR") or _get_conf("FERUM_VAULT_ADDR")
-	mount = _get_conf("VAULT_MOUNT") or _get_conf("FERUM_VAULT_MOUNT")
-	path = _get_conf("VAULT_PATH") or _get_conf("FERUM_VAULT_PATH")
-	token = _get_conf("VAULT_TOKEN") or _get_conf("FERUM_VAULT_TOKEN")
-	role_id = _get_conf("VAULT_ROLE_ID") or _get_conf("FERUM_VAULT_ROLE_ID")
-	secret_id = _get_conf("VAULT_SECRET_ID") or _get_conf("FERUM_VAULT_SECRET_ID")
+	settings = get_settings()
+	cfg = settings.vault_config()
+	client = settings.vault_client()
 
-	auth = "token" if token else ("approle" if (role_id and secret_id) else "missing")
-	return {
-		"configured": bool(addr and mount and path and auth != "missing"),
-		"auth": auth,
+	out = {
+		"configured": bool(cfg and cfg.auth != "missing"),
+		"auth": getattr(cfg, "auth", None) if cfg else "missing",
 	}
+
+	if not client:
+		return out
+
+	try:
+		out["health"] = client.sys_health()
+	except Exception as exc:
+		out["health"] = {"ok": False, "error": str(exc) or "vault_health_failed"}
+
+	return out
 
 
 @frappe.whitelist()
@@ -124,6 +98,7 @@ def status() -> dict:
 		"telegram_bot": _telegram_bot_config_status(),
 		"fastapi": _fastapi_config_status(),
 		"vault": _vault_config_status(),
+		"security_validation": validate_security(),
 	}
 
 	try:

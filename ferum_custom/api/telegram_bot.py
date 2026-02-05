@@ -6,48 +6,19 @@ import re
 import secrets
 import tempfile
 from dataclasses import dataclass
-from pathlib import Path
 
 import frappe
 import requests
 from frappe import _
 from frappe.utils import add_to_date, cint, get_url, now_datetime, validate_email_address
 
-_DOTENV_LOADED = False
-
-
-def _ensure_dotenv_loaded() -> None:
-	"""Load bench `.env` for long-running processes where env vars may not be passed explicitly."""
-	global _DOTENV_LOADED
-	if _DOTENV_LOADED:
-		return
-	_DOTENV_LOADED = True
-	try:
-		from dotenv import load_dotenv  # type: ignore
-	except Exception:
-		return
-
-	for parent in Path(__file__).resolve().parents[:8]:
-		candidate = parent / ".env"
-		if candidate.exists():
-			load_dotenv(dotenv_path=str(candidate), override=False)
-			return
-
-
-def _get_conf(key: str) -> str | None:
-	_ensure_dotenv_loaded()
-	val = frappe.conf.get(key) if hasattr(frappe, "conf") else None
-	if val is None:
-		val = os.getenv(key)
-	if val is None:
-		return None
-	val = str(val).strip()
-	return val or None
+from ferum_custom.config.settings import get_settings
 
 
 def _telegram_bot_token() -> str | None:
-	# Prefer env/site_config over DocType settings.
-	token = _get_conf("FERUM_TELEGRAM_BOT_TOKEN") or _get_conf("TELEGRAM_BOT_TOKEN")
+	# Prefer env/site_config over DocType settings, but allow Vault as a source.
+	settings = get_settings()
+	token = settings.get("FERUM_TELEGRAM_BOT_TOKEN", "TELEGRAM_BOT_TOKEN")
 	return token or None
 
 
