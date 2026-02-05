@@ -128,6 +128,7 @@ has_permission = {
 	"Invoice": "ferum_custom.security.portal_permissions.invoice_has_permission",
 	"ServiceProject": "ferum_custom.security.service_project_permissions.service_project_has_permission",
 	"Service Project": "ferum_custom.security.service_project_permissions.service_project_has_permission",
+	"Service Object": "ferum_custom.security.service_object_permissions.service_object_has_permission",
 	"File": "ferum_custom.security.file_permissions.file_has_permission",
 }
 

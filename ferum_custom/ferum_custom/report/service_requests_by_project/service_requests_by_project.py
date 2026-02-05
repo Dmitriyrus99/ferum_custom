@@ -12,14 +12,15 @@ def execute(filters: dict | None = None) -> tuple[list[str], list[list[Any]]]:
 	conditions: list[str] = []
 	values: list[Any] = []
 	if project:
-		conditions.append("project = %s")
-		values.append(project)
+		# Prefer new model (erp_project), but keep legacy custom field for historical rows.
+		conditions.append("(ifnull(erp_project,'') = %s or ifnull(erpnext_project,'') = %s)")
+		values.extend([project, project])
 
 	where = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
 	columns = [
 		"Заявка:Link/Service Request:150",
-		"Проект:Link/Service Project:180",
+		"Проект:Link/Project:180",
 		"Статус:Data:120",
 		"Приоритет:Data:120",
 		"Назначено:Link/User:180",
@@ -30,7 +31,7 @@ def execute(filters: dict | None = None) -> tuple[list[str], list[list[Any]]]:
 		f"""
 		select
 			name,
-			project,
+			ifnull(erp_project, erpnext_project) as project,
 			status,
 			priority,
 			assigned_to,

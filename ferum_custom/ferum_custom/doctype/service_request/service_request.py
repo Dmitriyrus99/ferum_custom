@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import os
-
 import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import add_to_date, get_datetime, now
 
+from ferum_custom.config.settings import get_settings
+from ferum_custom.config.types import parse_int
 from ferum_custom.notifications import send_telegram_notification_to_fastapi
 
 
@@ -25,7 +25,61 @@ class ServiceRequest(Document):
 			return "Service Object"
 		return "ServiceObject"
 
+	def _sync_customer_company_from_project(self) -> None:
+		if not self.meta.has_field("erp_project"):
+			return
+
+		project = str(getattr(self, "erp_project", None) or "").strip()
+		if not project:
+			return
+
+		if not frappe.db.exists("Project", project):
+			frappe.throw(_("Project not found: {0}.").format(frappe.bold(project)))
+
+		fields: list[str] = []
+		if frappe.db.has_column("Project", "customer") and self.meta.has_field("customer"):
+			fields.append("customer")
+		if frappe.db.has_column("Project", "company") and self.meta.has_field("company"):
+			fields.append("company")
+
+		if not fields:
+			return
+
+		row = frappe.db.get_value("Project", project, fields, as_dict=True) or {}
+		if not isinstance(row, dict):
+			return
+
+		if self.meta.has_field("customer") and row.get("customer"):
+			self.customer = row.get("customer")
+
+		# `company` is mandatory; prefer Project.company if not set.
+		if self.meta.has_field("company") and not getattr(self, "company", None) and row.get("company"):
+			self.company = row.get("company")
+
+	def _validate_project_site_belongs_to_project(self) -> None:
+		if not self.meta.has_field("project_site"):
+			return
+		project_site = str(getattr(self, "project_site", None) or "").strip()
+		if not project_site:
+			return
+		if not frappe.db.exists("Project Site", project_site):
+			frappe.throw(_("Project Site not found: {0}.").format(frappe.bold(project_site)))
+
+		parent = frappe.db.get_value("Project Site", project_site, "parent")
+		parent = str(parent or "").strip()
+		erp_project = str(getattr(self, "erp_project", None) or "").strip()
+		if erp_project and parent and parent != erp_project:
+			frappe.throw(
+				_("Project Site {0} does not belong to Project {1}.").format(
+					frappe.bold(project_site), frappe.bold(erp_project)
+				)
+			)
+
 	def _sync_contract_customer_project(self) -> None:
+		# New model: Service Request -> ERPNext Project + Project Site.
+		self._sync_customer_company_from_project()
+		self._validate_project_site_belongs_to_project()
+
 		# If contract is not set but service_object is known, try to infer contract from active link.
 		if (
 			not getattr(self, "contract", None)
@@ -51,8 +105,12 @@ class ServiceRequest(Document):
 			if contract.party_name:
 				self.customer = contract.party_name
 
-			if self.meta.has_field("erpnext_project") and frappe.db.has_column("Project", "contract"):
-				self.erpnext_project = frappe.db.get_value("Project", {"contract": contract.name}, "name")
+			if frappe.db.has_column("Project", "contract"):
+				project = frappe.db.get_value("Project", {"contract": contract.name}, "name")
+				if project and self.meta.has_field("erp_project"):
+					self.erp_project = project
+				if project and self.meta.has_field("erpnext_project"):
+					self.erpnext_project = project
 
 			if getattr(self, "service_object", None):
 				so_customer = frappe.db.get_value(self._service_object_dt(), self.service_object, "customer")
@@ -203,30 +261,13 @@ def _pick_contract_for_service_object(
 
 
 def _get_int_setting(*keys: str) -> int | None:
-	for key in keys:
-		val = frappe.conf.get(key) if hasattr(frappe, "conf") else None
-		if val is None:
-			val = os.getenv(key)
-		if val is None:
-			continue
-		try:
-			return int(str(val).strip())
-		except ValueError:
-			continue
-	return None
+	settings = get_settings()
+	return parse_int(settings.get(*keys))
 
 
 def _get_setting(*keys: str) -> str | None:
-	for key in keys:
-		val = frappe.conf.get(key) if hasattr(frappe, "conf") else None
-		if val is None:
-			val = os.getenv(key)
-		if val is None:
-			continue
-		val = str(val).strip()
-		if val:
-			return val
-	return None
+	settings = get_settings()
+	return settings.get(*keys)
 
 
 def _dt_now() -> object:

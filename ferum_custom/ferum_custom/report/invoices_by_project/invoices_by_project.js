@@ -4,7 +4,7 @@ frappe.query_reports["Invoices by Project"] = {
 			fieldname: "project",
 			label: "Project",
 			fieldtype: "Link",
-			options: "Service Project",
+			options: "Project",
 			reqd: 0,
 		},
 	],
