@@ -54,3 +54,4 @@ ferum_custom.patches.v15_9.update_file_doc_type_options_project_documents
 ferum_custom.patches.v15_9.add_report_project_sites
 ferum_custom.patches.v15_9.fix_workspaces_objects_shortcuts_project_sites
 ferum_custom.patches.v15_9.ensure_file_home_folder
+ferum_custom.patches.v15_9.disable_broken_reports

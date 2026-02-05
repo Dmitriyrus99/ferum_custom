@@ -90,6 +90,7 @@ async def _run_webhook(dp: Dispatcher, bot: Bot, settings: Settings) -> None:
 	assert settings.webhook_url, "webhook_url required"
 
 	app = web.Application()
+	app.router.add_get("/health", lambda request: web.json_response({"status": "ok"}))
 	app.router.add_get("/tg-bot/health", lambda request: web.json_response({"status": "ok"}))
 	SimpleRequestHandler(dispatcher=dp, bot=bot, secret_token=settings.webhook_secret).register(
 		app, path=settings.webhook_path
