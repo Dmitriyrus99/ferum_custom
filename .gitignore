@@ -12,3 +12,17 @@ __pycache__
 *.env
 .env
 .venv
+
+# Guard against accidentally committing Git metadata into the working tree
+/HEAD
+/FETCH_HEAD
+/ORIG_HEAD
+/COMMIT_EDITMSG
+/index
+/config
+/description
+/packed-refs
+/objects/
+/refs/
+/logs/
+/hooks/
