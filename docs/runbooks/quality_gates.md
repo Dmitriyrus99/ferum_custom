@@ -46,7 +46,9 @@ GitHub Actions:
 
 - `PRE_COMMIT_HOME=/home/frappe/frappe-bench/.cache/pre-commit`
 
-Скрипты в `scripts/precommit/*` сами ставят `PRE_COMMIT_HOME` в `apps/ferum_custom/.cache/pre-commit` (если переменная не задана).
+Скрипты в `scripts/precommit/*` сами выбирают writable cache dir:
+по умолчанию используют стандартный (`~/.cache/pre-commit`), а если он недоступен — fallback на `apps/ferum_custom/.cache/pre-commit`
+(можно переопределить `PRE_COMMIT_HOME` вручную).
 
 ## 4) Полный чек перед пушем (рекомендуется)
 

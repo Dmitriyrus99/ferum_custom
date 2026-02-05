@@ -2,8 +2,15 @@
 set -euo pipefail
 
 ROOT="$(git rev-parse --show-toplevel)"
-export PRE_COMMIT_HOME="${PRE_COMMIT_HOME:-$ROOT/.cache/pre-commit}"
 
-mkdir -p "$PRE_COMMIT_HOME"
+DEFAULT_PRE_COMMIT_HOME="${XDG_CACHE_HOME:-$HOME/.cache}/pre-commit"
+CANDIDATE_PRE_COMMIT_HOME="${PRE_COMMIT_HOME:-$DEFAULT_PRE_COMMIT_HOME}"
+
+if ! mkdir -p "$CANDIDATE_PRE_COMMIT_HOME" 2>/dev/null; then
+	CANDIDATE_PRE_COMMIT_HOME="$ROOT/.cache/pre-commit"
+	mkdir -p "$CANDIDATE_PRE_COMMIT_HOME"
+fi
+
+export PRE_COMMIT_HOME="$CANDIDATE_PRE_COMMIT_HOME"
 
 pre-commit run --all-files "$@"
