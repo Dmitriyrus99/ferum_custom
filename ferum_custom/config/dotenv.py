@@ -69,7 +69,7 @@ def load_dotenv_once() -> str | None:
 		return None
 
 	try:
-		from dotenv import load_dotenv  # type: ignore
+		from dotenv import load_dotenv
 
 		load_dotenv(dotenv_path=str(path), override=False)
 	except Exception:

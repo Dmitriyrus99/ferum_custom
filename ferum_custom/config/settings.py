@@ -82,7 +82,7 @@ def _safe_get_frappe_conf(key: str) -> Any:
 	if "frappe" not in sys.modules:
 		return None
 	try:
-		import frappe  # type: ignore
+		import frappe
 	except Exception:
 		return None
 
@@ -100,7 +100,7 @@ def _safe_get_frappe_settings_value(key: str) -> str | None:
 	if "frappe" not in sys.modules:
 		return None
 	try:
-		import frappe  # type: ignore
+		import frappe
 	except Exception:
 		return None
 

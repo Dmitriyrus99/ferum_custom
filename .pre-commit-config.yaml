@@ -106,6 +106,7 @@ repos:
         pass_filenames: false
         additional_dependencies:
           - types-redis
+          - types-requests
         stages: [manual, pre-push]
 
   - repo: local

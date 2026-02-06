@@ -57,6 +57,8 @@ Namespace packages are workable, but are fragile across tooling / editable insta
 Static AST scan:
 
 - Python files scanned: **204**
+- Internal import statements found (absolute-only): **57** (unique modules: **19**)
+- Broken internal import targets on disk: **0**
 - Top external dependencies by import frequency:
   - `frappe` (dominant), `aiogram`, `fastapi`, `httpx`, `googleapiclient`, `requests`
 - Top internal import hotspots:
