@@ -28,7 +28,10 @@ Or use the helper script:
 bash scripts/precommit/install.sh
 ```
 
-If you run inside a container where `~/.cache` is read-only, set a writable cache dir:
+If you run inside a container where `~/.cache` is read-only, the helper script will auto-select a writable
+cache dir under the repo (`apps/ferum_custom/.cache/pre-commit`) and patch git hooks accordingly.
+
+Manual alternative (if you need it):
 
 ```bash
 export PRE_COMMIT_HOME=/home/frappe/frappe-bench/.cache/pre-commit
