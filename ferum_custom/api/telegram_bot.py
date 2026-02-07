@@ -300,6 +300,18 @@ def _projects_for_link(link: LinkedTelegramUser) -> list[dict]:
 			)
 		)
 
+	# Standard Project users child table
+	if project_meta.has_field("users") and frappe.db.exists("DocType", "Project User"):
+		if frappe.db.has_column("Project User", "user"):
+			projects.update(
+				frappe.get_all(
+					"Project User",
+					filters={"parenttype": "Project", "user": link.user},
+					pluck="parent",
+					limit=500,
+				)
+			)
+
 	# Engineer access via Project Site.default_engineer
 	if frappe.db.exists("DocType", _project_site_dt()) and frappe.db.has_column(
 		_project_site_dt(), "default_engineer"

@@ -56,3 +56,4 @@ ferum_custom.patches.v15_9.fix_workspaces_objects_shortcuts_project_sites
 ferum_custom.patches.v15_9.ensure_file_home_folder
 ferum_custom.patches.v15_9.disable_broken_reports
 ferum_custom.patches.v15_9.disable_legacy_service_object_mutations
+ferum_custom.patches.v15_9.add_rusakov_to_all_projects
