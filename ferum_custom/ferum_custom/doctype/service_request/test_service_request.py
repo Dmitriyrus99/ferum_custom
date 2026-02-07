@@ -3,6 +3,26 @@ from __future__ import annotations
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
+# Keep test record generation minimal for this app's doctypes.
+#
+# `bench run-tests --app ferum_custom` runs only this app's tests; however, Frappe's default
+# `make_test_records()` recursion can traverse far into ERPNext's dependency graph and hit
+# optional doctypes that may not be installed in this bench (e.g. "Payment Gateway").
+test_ignore = [
+	"Company",
+	"Contract",
+	"Currency",
+	"Customer",
+	"Project",
+	"Project Site",
+	"SLA Policy",
+	"Service Department",
+	"Service Object",
+	"Service Project",
+	"Service Report",
+	"User",
+]
+
 
 class TestServiceRequest(FrappeTestCase):
 	def _company(self) -> str:
@@ -12,8 +32,23 @@ class TestServiceRequest(FrappeTestCase):
 
 	def _customer(self) -> str:
 		customer = frappe.db.get_value("Customer", {}, "name")
-		self.assertTrue(customer)
-		return str(customer)
+		if customer:
+			return str(customer)
+
+		customer_doc = frappe.new_doc("Customer")
+		customer_doc.customer_name = f"Test Customer {frappe.generate_hash(length=6)}"
+		if hasattr(customer_doc, "customer_type"):
+			customer_doc.customer_type = "Individual"
+		if hasattr(customer_doc, "customer_group"):
+			customer_doc.customer_group = (
+				frappe.db.get_value("Customer Group", {"is_group": 1}, "name") or "All Customer Groups"
+			)
+		if hasattr(customer_doc, "territory"):
+			customer_doc.territory = (
+				frappe.db.get_value("Territory", {"is_group": 1}, "name") or "All Territories"
+			)
+		customer_doc.insert(ignore_permissions=True)
+		return str(customer_doc.name)
 
 	def _make_project(self, suffix: str) -> frappe.model.document.Document:
 		project = frappe.new_doc("Project")

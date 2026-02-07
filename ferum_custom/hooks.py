@@ -194,7 +194,7 @@ scheduler_events = {
 # Testing
 # -------
 
-# before_tests = "ferum_custom.install.before_tests"
+before_tests = "ferum_custom.setup.tests.before_tests"
 
 # Overriding Methods
 # ------------------------------

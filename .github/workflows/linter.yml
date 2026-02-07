@@ -49,11 +49,11 @@ jobs:
         with:
           extra_args: --all-files
 
-      - name: Compile Telegram bot sources
-        run: python -m compileall -q telegram_bot
+      - name: Compile Python sources
+        run: python -m compileall -q backend ferum_custom telegram_bot scripts
 
   typecheck:
-    name: Mypy (backend)
+    name: Mypy
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

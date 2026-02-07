@@ -8,13 +8,13 @@ GitHub Actions:
 
 - `Quality` (`.github/workflows/linter.yml`)
   - `pre-commit --all-files`
-  - `python -m compileall -q telegram_bot`
+  - `python -m compileall -q backend ferum_custom telegram_bot scripts`
 - `Security` (`.github/workflows/security.yml`)
   - Semgrep rules (frappe/semgrep-rules)
 - `CI` (`.github/workflows/ci.yml`)
   - `pytest backend/tests`
   - bench: установка Frappe/ERPNext + `install-app ferum_custom` + `migrate` + `run-tests --app ferum_custom` + `bench build`
-- `Mypy (backend)` (в `linter.yml`)
+- `Mypy` (в `linter.yml`)
 
 ## 2) Быстрый чек перед коммитом (обязательно)
 
@@ -71,6 +71,10 @@ GitHub Actions:
 Для Frappe/ERPNext интеграционных тестов ориентируйся на CI:
 
 - `bench --site test_site run-tests --app ferum_custom`
+
+Примечание: doctype-тесты Frappe по умолчанию вызывают `make_test_records()` и могут рекурсивно уйти в широкий граф зависимостей ERPNext.
+Если в окружении нет опциональных приложений/DocType (например, `Payment Gateway` из payments-app), тесты могут падать ещё до запуска кейсов.
+В таких случаях используй `test_ignore` в doctype test module и/или создавай минимальные fixture-записи вручную в тестах.
 
 ## 5) Правило “исправлять несоответствия в каждом PR”
 
