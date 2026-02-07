@@ -7,7 +7,18 @@ from typing import Any
 import httpx
 import pytest
 
-from telegram_bot.telegram_bot.frappe import FrappeAPI, FrappeAPIError, _extract_frappe_error_message
+from ferum_custom.integrations.telegram_bot.frappe import (
+	FrappeAPI,
+	FrappeAPIError,
+	_extract_frappe_error_message,
+)
+
+
+def test_backward_compat_import_path() -> None:
+	# Historical path kept for external tools / older run commands.
+	from telegram_bot.telegram_bot.frappe import FrappeAPI as OldFrappeAPI
+
+	assert OldFrappeAPI is FrappeAPI
 
 
 def test_extract_frappe_error_message_server_messages() -> None:
