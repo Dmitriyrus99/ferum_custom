@@ -22,7 +22,7 @@ Constraints honored:
 
 | Item | Depends on | Notes |
 |---|---|---|
-| Contract tests (`backend/tests/test_contract_frappe_api.py`) | `telegram_bot.telegram_bot.frappe.FrappeAPI`, `httpx` | Uses `httpx.MockTransport` (offline, deterministic). |
+| Contract tests (`backend/tests/test_contract_frappe_api.py`) | `ferum_custom.integrations.telegram_bot.frappe.FrappeAPI`, `httpx` | Uses `httpx.MockTransport` (offline, deterministic). Backward-compat import path is tested too. |
 | Load runner (`scripts/scaling/http_load.py`) | `httpx` | Pure GET load; supports `Host` header for multi-tenant sites. |
 
 ### Risk map

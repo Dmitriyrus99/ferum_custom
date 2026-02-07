@@ -356,16 +356,14 @@ To update the application after pushing new code to your repository:
 
 ## 11. Running the Telegram Bot
 
-The Telegram bot runs as a separate Python process. Ensure you have set `TELEGRAM_BOT_TOKEN` in your `.env` file.
+The Telegram bot runs as a separate Python process (bench `Procfile` / supervisor).
+Ensure you have set `FERUM_TELEGRAM_BOT_TOKEN` (and optionally ERP API credentials) in your `.env`.
 
-Navigate to the `backend` directory (`ferum_custom/backend/`) and run the bot:
+Manual run (from bench root):
 
 ```bash
-pip install -r requirements.txt # Install bot dependencies
-python -m bot.telegram_bot
+./env/bin/python -m ferum_custom.integrations.telegram_bot
 ```
-
-**Note:** Replace `YOUR_FASTAPI_JWT_TOKEN` in `backend/bot/telegram_bot.py` and `ferum_custom/notifications.py` with a valid token for testing.
 
 ## 12. Backup Strategy
 

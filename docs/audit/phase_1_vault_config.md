@@ -76,7 +76,7 @@ Design rule: Vault KV should store keys using the same names as env keys (e.g. `
 - `ferum_custom/notifications.py` — uses unified settings for FastAPI + Telegram config.
 - `ferum_custom/api/telegram_bot.py` — uses unified settings for bot token (Vault becomes valid source).
 - `ferum_custom/integrations/google_drive_folders.py` — uses unified settings and supports JSON content for SA key (writes keyfile safely).
-- `telegram_bot/telegram_bot/settings.py` — uses unified settings layer + Vault support.
+- `ferum_custom/integrations/telegram_bot/settings.py` — uses unified settings layer + Vault support (old `telegram_bot/...` kept as wrapper).
 - `backend/config.py` — uses unified settings layer + Vault support (keeps backward-compatible defaults).
 
 ### Migration endpoint (idempotent)

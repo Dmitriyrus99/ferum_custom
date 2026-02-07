@@ -13,7 +13,7 @@
 
 - **bench**: `/home/frappe/frappe-bench`
 - **app**: `apps/ferum_custom/ferum_custom` (Frappe app `ferum_custom`)
-- **telegram bot**: `apps/ferum_custom/telegram_bot` (aiogram бот)
+- **telegram bot**: `apps/ferum_custom/ferum_custom/integrations/telegram_bot` (aiogram бот; старый путь `apps/ferum_custom/telegram_bot` — wrapper)
 - **Drive**: интеграция с Google Drive через service account
 - **Vault**: Hashicorp Vault (KV secrets), источник конфигурации/секретов
 

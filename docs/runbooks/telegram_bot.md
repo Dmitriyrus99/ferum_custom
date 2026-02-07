@@ -2,7 +2,8 @@
 
 ## 1) Где живёт бот
 
-- Код: `apps/ferum_custom/telegram_bot`
+- Код (канонично): `apps/ferum_custom/ferum_custom/integrations/telegram_bot`
+- Совместимость: старый путь `apps/ferum_custom/telegram_bot` оставлен как thin-wrapper (для старых команд запуска).
 - Процесс bench: `Procfile` (строка `telegram-bot: ...`)
 - Логи bench:
   - `logs/telegram-bot.log`
@@ -38,7 +39,7 @@ Webhook‑режим:
 ## 3) Быстрая диагностика
 
 1. Самотест (не печатает секреты):
-   - `./env/bin/python apps/ferum_custom/telegram_bot/selftest.py`
+   - `./env/bin/python -m ferum_custom.integrations.telegram_bot.selftest`
 2. Проверить, что webhook‑сервер жив:
    - `curl -s http://127.0.0.1:8080/tg-bot/health`
 3. Проверить DNS резолвинг Telegram API:
