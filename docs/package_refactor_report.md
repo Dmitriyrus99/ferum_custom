@@ -20,6 +20,10 @@ Update (2026-02-07): The standalone **Telegram bot** was consolidated under the 
 (`ferum_custom.integrations.telegram_bot`) to avoid fragile runtime entrypoints relying on implicit namespace packages
 like `apps.*`. Compatibility wrappers are kept for historical import paths and run commands.
 
+Update (2026-02-07): The standalone **FastAPI backend** was consolidated under the installed app package
+(`ferum_custom.integrations.fastapi_backend`). Compatibility wrappers are kept for historical import paths and
+entrypoints like `uvicorn backend.main:app`.
+
 No functional modules were removed.
 
 ## 1) Scan Results (Before)
@@ -46,6 +50,8 @@ The following folders contained Python modules but had **no** `__init__.py` (PEP
 - `ferum_custom/utils/`
 - `backend/bot/`
 - Telegram bot runtime entrypoint depended on implicit namespaces (`apps.ferum_custom...`) from bench root.
+- FastAPI backend runtime entrypoint depended on repo-root package imports (`backend.*`) and was not installed as part
+  of the app package.
 
 Namespace packages are workable, but are fragile across tooling / editable installs and make refactors riskier.
 
@@ -120,6 +126,13 @@ apps/ferum_custom/
     ferum_custom/        (Frappe module package; unchanged)
       doctype/...
       report/...
+  backend/               (compatibility wrappers; preserved)
+    main.py
+    config.py
+    auth.py
+    frappe_client.py
+    routers/...
+    bot/...
   telegram_bot/          (compatibility wrappers; preserved)
     main.py
     selftest.py
@@ -180,6 +193,27 @@ Update (2026-02-07) changed files (Telegram bot consolidation):
   - `docs/audit/phase_1_vault_config.md`
   - `docs/audit/phase_3_scaling.md`
 
+Update (2026-02-07) changed files (FastAPI backend consolidation):
+
+- Moved:
+  - `backend/main.py` → `ferum_custom/integrations/fastapi_backend/main.py`
+  - `backend/config.py` → `ferum_custom/integrations/fastapi_backend/config.py`
+  - `backend/auth.py` → `ferum_custom/integrations/fastapi_backend/auth.py`
+  - `backend/frappe_client.py` → `ferum_custom/integrations/fastapi_backend/frappe_client.py`
+  - `backend/routers/*` → `ferum_custom/integrations/fastapi_backend/routers/*`
+  - `backend/bot/*` → `ferum_custom/integrations/fastapi_backend/bot/*`
+- Added:
+  - `ferum_custom/integrations/fastapi_backend/__init__.py`
+  - `ferum_custom/integrations/fastapi_backend/__main__.py`
+- Added wrappers (compat):
+  - `backend/main.py`
+  - `backend/config.py`
+  - `backend/auth.py`
+  - `backend/frappe_client.py`
+  - `backend/routers/*`
+  - `backend/bot/*`
+- Updated: `pyproject.toml` (mypy targets include canonical backend path)
+
 ### 3.2 Import paths
 
 No production import paths were changed.
@@ -193,10 +227,18 @@ Telegram bot canonical paths:
 
 - `ferum_custom.integrations.telegram_bot.*`
 
+FastAPI backend canonical paths:
+
+- `ferum_custom.integrations.fastapi_backend.*`
+
 Telegram bot compatibility paths (kept):
 
 - `telegram_bot.telegram_bot.*`
 - `apps.ferum_custom.telegram_bot.*` (bench Procfile/supervisor previously used this)
+
+FastAPI backend compatibility paths (kept):
+
+- `backend.*` (historical imports and `uvicorn backend.main:app`)
 
 ## 4) Validation Results
 

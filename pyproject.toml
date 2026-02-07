@@ -68,7 +68,7 @@ addopts = ["-q", "--disable-warnings", "--maxfail=1"]
 
 [tool.mypy]
 python_version = "3.12"
-files = ["backend"]
+files = ["backend", "ferum_custom/integrations/fastapi_backend"]
 pretty = true
 show_error_codes = true
 explicit_package_bases = true
