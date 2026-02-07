@@ -38,10 +38,10 @@ Key secret-bearing fields in `Ferum Custom Settings`:
 
 | Component | Purpose | Required/Typical keys (aliases supported) |
 |---|---|---|
-| Vault client | source of truth for secrets | `VAULT_ADDR`, `VAULT_MOUNT`, `VAULT_PATH`, (`VAULT_TOKEN` **or** `VAULT_ROLE_ID`+`VAULT_SECRET_ID`), TLS: `VAULT_CACERT`/`VAULT_CLIENT_CERT`/`VAULT_CLIENT_KEY` |
+| Vault client | source of truth for secrets | `VAULT_ADDR`, `VAULT_MOUNT`, `VAULT_PATH`, auth: `VAULT_TOKEN` (**or** `VAULT_TOKEN_FILE`) **or** `VAULT_ROLE_ID`+`VAULT_SECRET_ID` (**or** `VAULT_ROLE_ID_FILE`+`VAULT_SECRET_ID_FILE`), TLS: `VAULT_CACERT`/`VAULT_CLIENT_CERT`/`VAULT_CLIENT_KEY` |
 | Frappe app | notifications, integrations | `FERUM_TELEGRAM_BOT_TOKEN`, `FERUM_FASTAPI_BASE_URL`, `FERUM_FASTAPI_AUTH_TOKEN`, Drive keys, etc. |
 | Telegram bot | reply/send commands | `FERUM_TELEGRAM_BOT_TOKEN`, webhook keys (`FERUM_TELEGRAM_WEBHOOK_URL`…), ERP API keys |
-| FastAPI backend | portal/integration API | `SECRET_KEY`, `ERP_API_URL`, `ERP_API_KEY`, `ERP_API_SECRET`, `REDIS_URL`, `SENTRY_DSN` |
+| FastAPI backend | portal/integration API | `FERUM_JWT_SECRET` (alias `SECRET_KEY`), `FERUM_FRAPPE_BASE_URL` (alias `ERP_API_URL`), `FERUM_FRAPPE_API_KEY`/`FERUM_FRAPPE_API_SECRET`, `REDIS_URL`, `SENTRY_DSN` |
 | Google Drive | folder + upload | `FERUM_GOOGLE_DRIVE_ROOT_FOLDER_ID`, service account key **file** or **JSON** |
 
 Design rule: Vault KV should store keys using the same names as env keys (e.g. `FERUM_TELEGRAM_BOT_TOKEN`), so all components can resolve them identically.
@@ -77,7 +77,7 @@ Design rule: Vault KV should store keys using the same names as env keys (e.g. `
 - `ferum_custom/api/telegram_bot.py` — uses unified settings for bot token (Vault becomes valid source).
 - `ferum_custom/integrations/google_drive_folders.py` — uses unified settings and supports JSON content for SA key (writes keyfile safely).
 - `ferum_custom/integrations/telegram_bot/settings.py` — uses unified settings layer + Vault support (old `telegram_bot/...` kept as wrapper).
-- `backend/config.py` — uses unified settings layer + Vault support (keeps backward-compatible defaults).
+- `ferum_custom/integrations/fastapi_backend/config.py` — uses unified settings layer + Vault support (keeps backward-compatible defaults; `backend/...` kept as wrapper).
 
 ### Migration endpoint (idempotent)
 

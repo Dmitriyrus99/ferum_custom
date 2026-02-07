@@ -98,9 +98,33 @@ def _vault_addr() -> str:
 	return addr.rstrip("/")
 
 
+def _read_secret_file(path: str) -> str:
+	path = str(path or "").strip()
+	if not path:
+		return ""
+	try:
+		return (Path(path).read_text(encoding="utf-8", errors="ignore") or "").strip()
+	except Exception:
+		return ""
+
+
 def _vault_login_approle(session: requests.Session, *, addr: str) -> str:
 	role_id = (os.getenv("VAULT_ROLE_ID") or os.getenv("FERUM_VAULT_ROLE_ID") or "").strip()
+	if not role_id:
+		role_id = _read_secret_file(
+			os.getenv("VAULT_ROLE_ID_FILE") or os.getenv("FERUM_VAULT_ROLE_ID_FILE") or ""
+		)
+
 	secret_id = (os.getenv("VAULT_SECRET_ID") or os.getenv("FERUM_VAULT_SECRET_ID") or "").strip()
+	if not secret_id:
+		secret_id = _read_secret_file(
+			os.getenv("VAULT_SECRET_ID_FILE")
+			or os.getenv("FERUM_VAULT_SECRET_ID_FILE")
+			or os.getenv("VAULT_APPROLE_SECRET_ID_FILE")
+			or os.getenv("FERUM_VAULT_APPROLE_SECRET_ID_FILE")
+			or ""
+		)
+
 	if not role_id or not secret_id:
 		raise VaultError("Missing VAULT_ROLE_ID/VAULT_SECRET_ID (AppRole auth)")
 
@@ -129,6 +153,9 @@ def _vault_login_approle(session: requests.Session, *, addr: str) -> str:
 
 def _vault_token(session: requests.Session, *, addr: str) -> str:
 	token = (os.getenv("VAULT_TOKEN") or os.getenv("FERUM_VAULT_TOKEN") or "").strip()
+	if token:
+		return token
+	token = _read_secret_file(os.getenv("VAULT_TOKEN_FILE") or os.getenv("FERUM_VAULT_TOKEN_FILE") or "")
 	if token:
 		return token
 	return _vault_login_approle(session, addr=addr)

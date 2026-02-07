@@ -71,6 +71,24 @@ def validate_security() -> dict:
 			)
 		)
 
+	jwt_secret = settings.get("FERUM_JWT_SECRET", "SECRET_KEY")
+	if not jwt_secret:
+		issues.append(
+			ValidationIssue(
+				code="backend.jwt_secret.missing",
+				severity="P1",
+				message="JWT secret is not configured (FERUM_JWT_SECRET / SECRET_KEY).",
+			)
+		)
+	elif jwt_secret == "super-secret-key":
+		issues.append(
+			ValidationIssue(
+				code="backend.jwt_secret.insecure_default",
+				severity="P0",
+				message="JWT secret uses insecure default value; set FERUM_JWT_SECRET / SECRET_KEY.",
+			)
+		)
+
 	return {
 		"ok": not issues,
 		"dotenv_path": dotenv_path,

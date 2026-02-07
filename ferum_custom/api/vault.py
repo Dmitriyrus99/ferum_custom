@@ -137,7 +137,7 @@ def sync_settings_to_vault(*, dry_run: int | bool = 1, only_missing: int | bool 
 	_maybe_set("FERUM_FRAPPE_API_KEY", settings.get("FERUM_FRAPPE_API_KEY", "ERP_API_KEY"))
 	_maybe_set("FERUM_FRAPPE_API_SECRET", settings.get("FERUM_FRAPPE_API_SECRET", "ERP_API_SECRET"))
 	_maybe_set("FERUM_FASTAPI_AUTH_TOKEN", settings.get("FERUM_FASTAPI_AUTH_TOKEN", "FASTAPI_AUTH_TOKEN"))
-	_maybe_set("SECRET_KEY", settings.get("SECRET_KEY"))
+	_maybe_set("FERUM_JWT_SECRET", settings.get("FERUM_JWT_SECRET", "SECRET_KEY"))
 
 	if not updates:
 		return {

@@ -37,8 +37,8 @@
    - `VAULT_MOUNT` (например `secret`)
    - `VAULT_PATH` (например `ferum/erpnext/<env>/bench`)
 3. Выбрать метод аутентификации:
-   - `VAULT_TOKEN` (временно/для ручных проверок) или
-   - `AppRole` (`VAULT_ROLE_ID` + `VAULT_SECRET_ID`) для CI/прод.
+   - `VAULT_TOKEN` (временно/для ручных проверок) или `VAULT_TOKEN_FILE` (файл с токеном) или
+   - `AppRole` (`VAULT_ROLE_ID` + `VAULT_SECRET_ID`, либо файлы `VAULT_ROLE_ID_FILE` + `VAULT_SECRET_ID_FILE`) для CI/прод.
 4. Включить TLS‑проверку:
    - `VAULT_CACERT` (CA), опционально mTLS (`VAULT_CLIENT_CERT`/`VAULT_CLIENT_KEY`).
 5. Генерация `.env` из Vault (скрипт в репозитории):

@@ -7,7 +7,7 @@ from unittest.mock import Mock
 import pytest
 
 from ferum_custom.config.settings import get_settings, reset_settings_cache
-from ferum_custom.config.vault import VaultClient, VaultConfig
+from ferum_custom.config.vault import VaultClient, VaultConfig, vault_config_from_getter
 
 
 @dataclass
@@ -110,3 +110,44 @@ def test_vaultclient_write_kv_merge_preserves_keys() -> None:
 	kwargs = session.post.call_args.kwargs
 	assert kwargs["json"]["data"]["A"] == "new"
 	assert kwargs["json"]["data"]["B"] == "keep"
+
+
+def test_vault_config_reads_token_from_file(tmp_path) -> None:
+	token_file = tmp_path / "token"
+	token_file.write_text("t\n", encoding="utf-8")
+
+	cfg = vault_config_from_getter(
+		{
+			"VAULT_ADDR": "https://vault.example",
+			"VAULT_MOUNT": "secret",
+			"VAULT_PATH": "ferum/test",
+			"VAULT_TOKEN_FILE": str(token_file),
+		}.get
+	)
+
+	assert cfg is not None
+	assert cfg.auth == "token"
+	assert cfg.token == "t"
+
+
+def test_vault_config_reads_approle_from_files(tmp_path) -> None:
+	role_id_file = tmp_path / "role_id"
+	secret_id_file = tmp_path / "secret_id"
+
+	role_id_file.write_text("role\n", encoding="utf-8")
+	secret_id_file.write_text("secret\n", encoding="utf-8")
+
+	cfg = vault_config_from_getter(
+		{
+			"VAULT_ADDR": "https://vault.example",
+			"VAULT_MOUNT": "secret",
+			"VAULT_PATH": "ferum/test",
+			"VAULT_ROLE_ID_FILE": str(role_id_file),
+			"VAULT_SECRET_ID_FILE": str(secret_id_file),
+		}.get
+	)
+
+	assert cfg is not None
+	assert cfg.auth == "approle"
+	assert cfg.role_id == "role"
+	assert cfg.secret_id == "secret"

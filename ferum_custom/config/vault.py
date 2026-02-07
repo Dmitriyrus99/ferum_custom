@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal
 
 import requests
@@ -64,6 +65,16 @@ def _vault_headers(*, token: str | None, namespace: str | None) -> dict[str, str
 	return headers
 
 
+def _read_secret_file(raw: Any) -> str | None:
+	path = clean_str(raw)
+	if not path:
+		return None
+	try:
+		return clean_str(Path(path).read_text(encoding="utf-8", errors="ignore"))
+	except Exception:
+		return None
+
+
 def vault_config_from_getter(get: Any) -> VaultConfig | None:
 	"""Build Vault config from a getter (env/frappe.conf/etc).
 
@@ -77,8 +88,19 @@ def vault_config_from_getter(get: Any) -> VaultConfig | None:
 	mount = clean_str(get("VAULT_MOUNT") or get("FERUM_VAULT_MOUNT")) or "secret"
 
 	token = clean_str(get("VAULT_TOKEN") or get("FERUM_VAULT_TOKEN"))
+	if not token:
+		token = _read_secret_file(get("VAULT_TOKEN_FILE") or get("FERUM_VAULT_TOKEN_FILE"))
 	role_id = clean_str(get("VAULT_ROLE_ID") or get("FERUM_VAULT_ROLE_ID"))
+	if not role_id:
+		role_id = _read_secret_file(get("VAULT_ROLE_ID_FILE") or get("FERUM_VAULT_ROLE_ID_FILE"))
 	secret_id = clean_str(get("VAULT_SECRET_ID") or get("FERUM_VAULT_SECRET_ID"))
+	if not secret_id:
+		secret_id = _read_secret_file(
+			get("VAULT_SECRET_ID_FILE")
+			or get("FERUM_VAULT_SECRET_ID_FILE")
+			or get("VAULT_APPROLE_SECRET_ID_FILE")
+			or get("FERUM_VAULT_APPROLE_SECRET_ID_FILE")
+		)
 
 	auth: VaultAuthMethod = "missing"
 	if token:

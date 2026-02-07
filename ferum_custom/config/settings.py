@@ -77,6 +77,16 @@ FERUM_GOOGLE_SERVICE_ACCOUNT_JSON = SettingSpec(
 
 SENTRY_DSN = SettingSpec(key="SENTRY_DSN", aliases=("sentry_dsn",), secret=True)
 
+FERUM_JWT_SECRET = SettingSpec(
+	key="FERUM_JWT_SECRET",
+	aliases=(
+		"SECRET_KEY",  # backend compatibility
+		"JWT_SECRET",
+		"ferum_jwt_secret",
+	),
+	secret=True,
+)
+
 
 def _safe_get_frappe_conf(key: str) -> Any:
 	if "frappe" not in sys.modules:
