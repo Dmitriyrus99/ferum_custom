@@ -1,0 +1,44 @@
+OK	ferum_custom.notifications.get_notification_config
+OK	ferum_custom.notifications.notify_invoice_status_change
+OK	ferum_custom.notifications.notify_new_invoice
+OK	ferum_custom.notifications.notify_new_service_report
+OK	ferum_custom.notifications.notify_new_service_request
+OK	ferum_custom.notifications.notify_service_report_status_change
+OK	ferum_custom.notifications.notify_service_request_status_change
+OK	ferum_custom.overrides.email_account.FerumEmailAccount
+OK	ferum_custom.overrides.query_report.run
+OK	ferum_custom.security.file_permissions.file_has_permission
+OK	ferum_custom.security.file_permissions.file_permission_query_conditions
+OK	ferum_custom.security.portal_permissions.contract_permission_query_conditions
+OK	ferum_custom.security.portal_permissions.invoice_has_permission
+OK	ferum_custom.security.portal_permissions.sales_invoice_has_permission
+OK	ferum_custom.security.portal_permissions.service_act_has_permission
+OK	ferum_custom.security.service_object_permissions.service_object_has_permission
+OK	ferum_custom.security.service_project_permissions.service_project_has_permission
+OK	ferum_custom.services.contract_project_sync.ensure_project_for_contract
+OK	ferum_custom.services.contract_project_sync.validate_contract_party_is_customer
+OK	ferum_custom.services.contract_project_sync.validate_project_has_contract
+OK	ferum_custom.services.contract_project_sync.validate_project_unique_contract
+OK	ferum_custom.services.project_documents.validate_project_document_file
+OK	ferum_custom.services.project_escalations.run_daily_project_escalations
+OK	ferum_custom.services.project_full_cycle.create_initial_project_todos
+OK	ferum_custom.services.project_full_cycle.validate_project_p0_stage_gates
+OK	ferum_custom.services.service_schedule.generate_service_requests_from_schedule
+OK	ferum_custom.setup.tests.before_tests
+OK	ferum_custom.utils.after_app_install
+OK	ferum_custom.utils.after_app_uninstall
+OK	ferum_custom.utils.after_request
+OK	ferum_custom.utils.background_jobs.ensure_job_context
+OK	ferum_custom.utils.before_app_install
+OK	ferum_custom.utils.before_app_uninstall
+OK	ferum_custom.utils.before_request
+OK	ferum_custom.utils.jinja_filters
+OK	ferum_custom.utils.jinja_methods
+FAIL	ferum_custom.api.permission.has_app_permission	ModuleNotFoundError: No module named 'ferum_custom.api.permission'
+FAIL	ferum_custom.auth.validate	ModuleNotFoundError: No module named 'ferum_custom.auth'
+FAIL	ferum_custom.event.get_events	ModuleNotFoundError: No module named 'ferum_custom.event'
+FAIL	ferum_custom.install.after_install	ModuleNotFoundError: No module named 'ferum_custom.install'
+FAIL	ferum_custom.install.before_install	ModuleNotFoundError: No module named 'ferum_custom.install'
+FAIL	ferum_custom.task.get_dashboard_data	ModuleNotFoundError: No module named 'ferum_custom.task'
+FAIL	ferum_custom.uninstall.after_uninstall	ModuleNotFoundError: No module named 'ferum_custom.uninstall'
+FAIL	ferum_custom.uninstall.before_uninstall	ModuleNotFoundError: No module named 'ferum_custom.uninstall'

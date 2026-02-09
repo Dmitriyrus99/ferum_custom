@@ -1,273 +1,162 @@
-# Ferum Custom — Package/Directory Normalization Report
+# Package Refactor Report — `ferum_custom`
 
-Date: 2026-02-07 (updated; initial refactor 2026-02-05)
+Date: 2026-02-09
 
-Scope: `apps/ferum_custom` (custom app repo) — Python package layout and imports.
+Scope: `/home/frappe/frappe-bench/apps/ferum_custom`
 
-## Executive Summary
+## 0) Executive summary
 
-The repo contained a mix of:
+The repo has a **hybrid structure**:
 
-- **Frappe module packages** (e.g. `ferum_custom.ferum_custom.*`) which are *expected* when a Module’s scrubbed name
-  equals the app name (`Ferum Custom` → `ferum_custom`).
-- **Implicit namespace packages** (directories with `.py` files but **no** `__init__.py`) used for active code.
-- **Legacy / empty directories** that increased confusion during debugging and refactors.
+- A Frappe app Python package root: `apps/ferum_custom/ferum_custom` (`import ferum_custom`).
+- A Frappe “Module” folder with the same scrub name: `apps/ferum_custom/ferum_custom/ferum_custom`
+  (`import ferum_custom.ferum_custom`) containing DocTypes, Reports, and module-scoped code.
+- Legacy standalone entrypoints kept as **compatibility wrappers** (e.g. `backend/*`, `telegram_bot/*`) that
+  delegate to canonical implementations under `ferum_custom/integrations/*`.
 
-This change set normalizes active Python code into **explicit packages** (adds missing `__init__.py`), removes
-unused/legacy placeholders, and keeps Frappe import paths backward-compatible.
+This layout is workable and matches how many Frappe apps evolve, but it creates confusion around import paths.
+In this refactor we **standardize canonical imports**, keep backward compatibility, and add audit artifacts.
 
-Update (2026-02-07): The standalone **Telegram bot** was consolidated under the installed app package
-(`ferum_custom.integrations.telegram_bot`) to avoid fragile runtime entrypoints relying on implicit namespace packages
-like `apps.*`. Compatibility wrappers are kept for historical import paths and run commands.
+## 1) Current structure (high-level)
 
-Update (2026-02-07): The standalone **FastAPI backend** was consolidated under the installed app package
-(`ferum_custom.integrations.fastapi_backend`). Compatibility wrappers are kept for historical import paths and
-entrypoints like `uvicorn backend.main:app`.
+Canonical code locations:
 
-No functional modules were removed.
+- Frappe app hooks + services: `ferum_custom/*`
+- Frappe Module artifacts (DocTypes/Reports): `ferum_custom/ferum_custom/*`
+- Standalone services:
+  - FastAPI backend: `ferum_custom/integrations/fastapi_backend/*`
+  - Telegram bot: `ferum_custom/integrations/telegram_bot/*`
 
-## 1) Scan Results (Before)
+Compatibility wrapper locations:
 
-### 1.1 Duplicated nesting
+- `backend/*` → `ferum_custom.integrations.fastapi_backend.*`
+- `telegram_bot/*` → `ferum_custom.integrations.telegram_bot.*`
+- `ferum_custom.ferum_custom.overrides.query_report` → `ferum_custom.overrides.query_report`
 
-`ferum_custom/ferum_custom` exists because Frappe resolves DocType/report controllers by:
+Audit artifacts (no secrets):
 
-`<app>.<module>.doctype.<doctype>...`
+- `docs/audit/import_map_summary.json`
+- `docs/audit/package_dirs.txt`
+- `docs/audit/duplicated_package_segments.txt`
+- `docs/audit/hooks_import_check.txt`
+- `docs/audit/*_module_meta_import_failures.txt`
 
-If `Module Def = "Ferum Custom"` then `scrub(module) = "ferum_custom"`, producing:
+## 2) Findings
 
-- `ferum_custom.ferum_custom.doctype...`
+### 2.1 Duplicated package nesting
 
-So this “duplicate name” is **structural and correct** for Frappe apps with a single module named like the app.
+Detected duplicated consecutive segments (examples):
 
-### 1.2 Inconsistent package layout (implicit namespace packages)
+- `ferum_custom/ferum_custom/*` — expected due to Frappe module folder named the same as the app/module.
+- `telegram_bot/telegram_bot/*` — historical wrapper package.
 
-The following folders contained Python modules but had **no** `__init__.py` (PEP 420 namespaces):
+Full list: `docs/audit/duplicated_package_segments.txt`.
 
-- `ferum_custom/integrations/`
-- `ferum_custom/security/`
-- `ferum_custom/services/`
-- `ferum_custom/utils/`
-- `backend/bot/`
-- Telegram bot runtime entrypoint depended on implicit namespaces (`apps.ferum_custom...`) from bench root.
-- FastAPI backend runtime entrypoint depended on repo-root package imports (`backend.*`) and was not installed as part
-  of the app package.
+### 2.2 Import and dependency map
 
-Namespace packages are workable, but are fragile across tooling / editable installs and make refactors riskier.
+Static import scan (AST-based):
 
-### 1.3 Redundant/legacy package roots
+- Scanned modules: 236
+- Files with imports: 183
+- Missing internal imports: 0
+- Strong cycles detected: 0 (module-level graph; best-effort resolution)
 
-- `ferum_custom/doctype/README.md` — legacy placeholder directory (not used by Frappe module loading).
-- `ferum_custom/ferum/__init__.py` — unused package (no references; no Module Def in DB).
-- Untracked empty directories existed in the working tree:
-  - `ferum_custom/report/*` (empty)
-  - `ferum_custom/notifications/` (empty; collided with `notifications.py`)
+Summary: `docs/audit/import_map_summary.json`.
 
-## 2) Import & Dependency Map (Snapshot)
+### 2.3 Critical runtime entrypoints (hooks)
 
-Static AST scan:
+Active hook targets were import-checked and all imports resolve:
 
-- Python files scanned: **204**
-- Internal import statements found (absolute-only): **57** (unique modules: **19**)
-- Broken internal import targets on disk: **0**
-- Top external dependencies by import frequency:
-  - `frappe` (dominant), `aiogram`, `fastapi`, `httpx`, `googleapiclient`, `requests`
-- Top internal import hotspots:
-  - `ferum_custom.config.settings` (shared config)
-  - `ferum_custom.integrations.google_drive_folders`
-  - `ferum_custom.api.project_drive`
-  - `ferum_custom.utils.role_resolution`
-- Coarse package graph (2-level) SCC analysis:
-  - **No cycles detected** (0 strongly connected components with size > 1)
+- Doc events, permission hooks, scheduled tasks, overrides, whitelisted overrides.
 
-## 3) Implemented Normalized Structure (After)
+Evidence: `docs/audit/hooks_import_check.txt`.
 
-### 3.1 What changed (filesystem)
+### 2.4 Frappe meta/import stability
 
-Before (relevant excerpt):
+For both sites:
 
-```
-apps/ferum_custom/
-  backend/
-    bot/                 (no __init__.py)
-  ferum_custom/
-    doctype/README.md    (legacy placeholder)
-    ferum/__init__.py    (unused)
-    integrations/        (no __init__.py)
-    security/            (no __init__.py)
-    services/            (no __init__.py)
-    utils/               (no __init__.py)
-    report/              (empty; untracked)
-    notifications/       (empty; untracked; name collision with notifications.py)
-    ferum_custom/        (Frappe module package)
-      doctype/...
-      report/...
-```
+- `test_site`
+- `erpclone.ferumrus.ru`
 
-After (relevant excerpt):
+All standard DocTypes in module **Ferum Custom** (`custom=0`) load successfully, and Query Reports execute
+with empty filters (via the overridden report runner).
 
-```
-apps/ferum_custom/
-  backend/
-    bot/__init__.py
-  ferum_custom/
-    integrations/__init__.py
-    integrations/telegram_bot/
-      __init__.py
-      __main__.py
-      main.py
-      selftest.py
-      frappe.py
-      handlers/...
-    security/__init__.py
-    services/__init__.py
-    utils/__init__.py
-    notifications.py
-    ferum_custom/        (Frappe module package; unchanged)
-      doctype/...
-      report/...
-  backend/               (compatibility wrappers; preserved)
-    main.py
-    config.py
-    auth.py
-    frappe_client.py
-    routers/...
-    bot/...
-  telegram_bot/          (compatibility wrappers; preserved)
-    main.py
-    selftest.py
-    telegram_bot/...
-```
+Evidence:
 
-Added explicit package markers:
+- `docs/audit/test_site_module_meta_import_failures.txt`
+- `docs/audit/erpclone.ferumrus.ru_module_meta_import_failures.txt`
 
-- `backend/bot/__init__.py`
-- `backend/tests/__init__.py`
-- `ferum_custom/integrations/__init__.py`
-- `ferum_custom/security/__init__.py`
-- `ferum_custom/services/__init__.py`
-- `ferum_custom/utils/__init__.py`
+## 3) Changes implemented in this refactor
 
-Removed unused placeholders:
+### 3.1 Normalize `query_report` override location
 
-- `ferum_custom/doctype/README.md`
-- `ferum_custom/ferum/__init__.py`
+Problem:
 
-Workspace hygiene (untracked empties removed):
+- The canonical hook path is `ferum_custom.overrides.query_report.run`.
+- The full implementation lived under `ferum_custom.ferum_custom.overrides.query_report`, requiring wrappers.
 
-- `ferum_custom/report/`
-- `ferum_custom/notifications/`
-- `ferum_custom/doctype/`
-- `ferum_custom/ferum/`
+Change:
 
-Changed files (git-tracked):
+- Moved the implementation to `ferum_custom/overrides/query_report.py`.
+- Converted `ferum_custom/ferum_custom/overrides/query_report.py` to a compatibility wrapper.
 
-- Added: `backend/bot/__init__.py`
-- Added: `backend/tests/__init__.py`
-- Added: `ferum_custom/integrations/__init__.py`
-- Added: `ferum_custom/security/__init__.py`
-- Added: `ferum_custom/services/__init__.py`
-- Added: `ferum_custom/utils/__init__.py`
-- Added: `docs/package_refactor_report.md`
-- Deleted: `ferum_custom/doctype/README.md`
-- Deleted: `ferum_custom/ferum/__init__.py`
+Result:
 
-Update (2026-02-07) changed files (Telegram bot consolidation):
+- Hook paths stay stable: `ferum_custom.overrides.query_report.run`.
+- Backward-compatible imports continue to work: `ferum_custom.ferum_custom.overrides.query_report.run`.
 
-- Moved: `telegram_bot/main.py` → `ferum_custom/integrations/telegram_bot/main.py`
-- Moved: `telegram_bot/selftest.py` → `ferum_custom/integrations/telegram_bot/selftest.py`
-- Moved: `telegram_bot/telegram_bot/frappe.py` → `ferum_custom/integrations/telegram_bot/frappe.py`
-- Moved: `telegram_bot/telegram_bot/settings.py` → `ferum_custom/integrations/telegram_bot/settings.py`
-- Moved: `telegram_bot/telegram_bot/handlers/*` → `ferum_custom/integrations/telegram_bot/handlers/*`
-- Added: `ferum_custom/integrations/telegram_bot/__main__.py`
-- Added wrappers:
-  - `telegram_bot/main.py`
-  - `telegram_bot/selftest.py`
-  - `telegram_bot/telegram_bot/*`
-- Updated tests: `backend/tests/test_contract_frappe_api.py`
-- Updated docs:
-  - `RUN.md`
-  - `DEPLOYMENT_GUIDE.md`
-  - `docs/runbooks/telegram_bot.md`
-  - `docs/runbooks/product_readiness_checklist.md`
-  - `docs/audit/phase_1_vault_config.md`
-  - `docs/audit/phase_3_scaling.md`
+## 4) Modified files (this change set)
 
-Update (2026-02-07) changed files (FastAPI backend consolidation):
+- `ferum_custom/overrides/query_report.py`
+- `ferum_custom/ferum_custom/overrides/query_report.py`
+- `ferum_custom/ferum_custom/tests/test_query_report_override.py`
+- `docs/audit/import_map_summary.json`
+- `docs/audit/package_dirs.txt`
+- `docs/audit/duplicated_package_segments.txt`
+- `docs/audit/hooks_import_check.txt`
+- `docs/audit/test_site_module_meta_import_failures.txt`
+- `docs/audit/erpclone.ferumrus.ru_module_meta_import_failures.txt`
+- `docs/package_refactor_report.md`
 
-- Moved:
-  - `backend/main.py` → `ferum_custom/integrations/fastapi_backend/main.py`
-  - `backend/config.py` → `ferum_custom/integrations/fastapi_backend/config.py`
-  - `backend/auth.py` → `ferum_custom/integrations/fastapi_backend/auth.py`
-  - `backend/frappe_client.py` → `ferum_custom/integrations/fastapi_backend/frappe_client.py`
-  - `backend/routers/*` → `ferum_custom/integrations/fastapi_backend/routers/*`
-  - `backend/bot/*` → `ferum_custom/integrations/fastapi_backend/bot/*`
-- Added:
-  - `ferum_custom/integrations/fastapi_backend/__init__.py`
-  - `ferum_custom/integrations/fastapi_backend/__main__.py`
-- Added wrappers (compat):
-  - `backend/main.py`
-  - `backend/config.py`
-  - `backend/auth.py`
-  - `backend/frappe_client.py`
-  - `backend/routers/*`
-  - `backend/bot/*`
-- Updated: `pyproject.toml` (mypy targets include canonical backend path)
+## 5) Validation executed
 
-### 3.2 Import paths
+From `apps/ferum_custom`:
 
-No production import paths were changed.
+- `pre-commit run --all-files`
+- `pre-commit run --all-files --hook-stage pre-push`
 
-Key Frappe module paths remain:
+From bench root:
 
-- `ferum_custom.ferum_custom.doctype.*`
-- `ferum_custom.ferum_custom.report.*`
+- `bench --site test_site migrate`
+- `bench --site erpclone.ferumrus.ru migrate`
+- `bench build --app ferum_custom`
+- `bench --site test_site run-tests --app ferum_custom`
 
-Telegram bot canonical paths:
-
-- `ferum_custom.integrations.telegram_bot.*`
-
-FastAPI backend canonical paths:
-
-- `ferum_custom.integrations.fastapi_backend.*`
-
-Telegram bot compatibility paths (kept):
-
-- `telegram_bot.telegram_bot.*`
-- `apps.ferum_custom.telegram_bot.*` (bench Procfile/supervisor previously used this)
-
-FastAPI backend compatibility paths (kept):
-
-- `backend.*` (historical imports and `uvicorn backend.main:app`)
-
-## 4) Validation Results
-
-Executed after refactor:
-
-- `cd apps/ferum_custom && pytest` → **passed** (9 tests)
-- `cd apps/ferum_custom && pre-commit run --all-files` → **passed**
-- `cd apps/ferum_custom && bash scripts/precommit/run_pre_push.sh` → **passed**
-- `bench --site test_site migrate` → **passed**
-- `bench build --app ferum_custom` → **passed**
-- `bench --site test_site execute ferum_custom.api.system_health.status` → **passed**
-
-## 5) Risks & Mitigations
+## 6) Risks & mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Adding `__init__.py` changes namespace semantics | If the same namespace existed from multiple sys.path entries, merging stops | Repo does not use multi-root namespaces; imports are all absolute and test/bench validations passed |
-| Confusion around `ferum_custom.ferum_custom` persists | Developers may still assume it is “wrong” | Documented as Frappe module convention; recommend keeping module naming stable for now |
-| Telegram bot entrypoint change | Bot may not start if Procfile/supervisor still uses old module path | Backward-compatible wrappers kept; update commands to `python -m ferum_custom.integrations.telegram_bot` |
+| Import path drift (`ferum_custom.ferum_custom.*` vs `ferum_custom.*`) | runtime ImportError, broken hooks | keep shims/wrappers for historical imports; add import checks in audit |
+| Query Report failures when UI sends empty filter dict | 500 errors on reports with `%(field)s` placeholders | override `frappe.desk.query_report.run` and pre-fill placeholders |
 
-## 6) Rollback Instructions
+## 7) Rollback instructions
 
-Git rollback (recommended):
+Rollback is reversible at code level:
 
-1) `cd apps/ferum_custom`
-2) `git revert <commit_sha>` (or `git restore .` if uncommitted)
-3) From bench root:
-   - `bench --site test_site migrate`
-   - `bench build --app ferum_custom`
+1. Revert the Git commit(s) for this change set.
+2. Run:
+   - `bench --site <site> migrate`
+   - restart bench processes (`bench restart` / process manager)
+3. Clear caches if needed:
+   - `bench --site <site> clear-cache`
 
-Note: removed directories like `ferum_custom/report/` and `ferum_custom/notifications/` were empty and untracked;
-restoring them is unnecessary.
+## 8) Next steps (recommended)
+
+Non-breaking improvements to continue the normalization:
+
+1. Keep all “canonical” runtime entrypoints under `ferum_custom/*` (outer package), and limit
+   `ferum_custom/ferum_custom/*` (module folder) to DocTypes/Reports/fixtures.
+2. Add a small `bench execute`-friendly audit module (e.g., `ferum_custom.setup.audit`) to run:
+   - doctype/report meta load check
+   - hooks import check
+   - system health checks (Vault/Drive/Telegram/FastAPI)
