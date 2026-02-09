@@ -83,3 +83,11 @@ GitHub Actions:
    - форматирование/импорты → править сразу (ruff/prettier)
    - lint ошибки → устранять сразу
 3. Если правка требует массового рефакторинга — выноси в отдельный PR.
+
+## 6) Runtime audit (быстрый smoke-check)
+
+Если нужно быстро проверить, что DocTypes/Reports/Workspaces/Workflows и интеграции не сломаны:
+
+- `bench --site <site> execute ferum_custom.setup.audit.run --kwargs "{'write_report': 1}"`
+
+Описание и формат отчёта: `docs/runbooks/runtime_audit.md`.
