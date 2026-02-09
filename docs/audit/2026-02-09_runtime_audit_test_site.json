@@ -1,11 +1,11 @@
 {
   "ok": true,
-  "generated_at": "2026-02-09T13:28:20.050539",
+  "generated_at": "2026-02-09T14:04:42.408164",
   "site": "test_site",
   "issues": [],
   "system_health": {
     "ok": true,
-    "generated_at": "2026-02-09T13:28:20.392661",
+    "generated_at": "2026-02-09T14:04:43.381328",
     "wkhtmltopdf": {
       "installed": true,
       "version": "wkhtmltopdf 0.12.6"

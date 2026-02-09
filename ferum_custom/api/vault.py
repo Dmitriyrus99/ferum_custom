@@ -4,6 +4,7 @@ from pathlib import Path
 
 import frappe
 from frappe import _
+from frappe.utils.password import remove_encrypted_password
 
 from ferum_custom.config.settings import get_settings
 
@@ -186,4 +187,93 @@ def sync_settings_to_vault(*, dry_run: int | bool = 1, only_missing: int | bool 
 		"written": would_write,
 		"skipped": skipped,
 		"total_candidates": len(updates),
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def clear_settings_secrets(*, dry_run: int | bool = 1, only_if_in_vault: int | bool = 1) -> dict:
+	"""Clear secret values from `Ferum Custom Settings` after migrating them to Vault (idempotent).
+
+	This is a **manual** cutover tool; it never returns secret values.
+
+	Parameters:
+	- `dry_run` (default=1): return what would be cleared, do not mutate DB.
+	- `only_if_in_vault` (default=1): clear a setting only if Vault KV contains a non-empty value for it.
+	"""
+	_require_system_manager()
+
+	dry_run = bool(int(dry_run))
+	only_if_in_vault = bool(int(only_if_in_vault))
+
+	settings = get_settings(refresh=True)
+	client = settings.vault_client()
+	if not client:
+		frappe.throw(_("Vault is not configured."), frappe.ValidationError)
+
+	try:
+		vault_data = client.read_kv(force_refresh=True) or {}
+	except Exception as exc:
+		frappe.throw(_("Failed to read Vault KV: {0}").format(exc), frappe.ValidationError)
+	if not isinstance(vault_data, dict):
+		vault_data = {}
+
+	def _vault_has(key: str) -> bool:
+		val = vault_data.get(key)
+		return bool(str(val or "").strip())
+
+	try:
+		doc = frappe.get_doc("Ferum Custom Settings")
+	except Exception as exc:
+		frappe.throw(_("Failed to load Ferum Custom Settings: {0}").format(exc), frappe.ValidationError)
+
+	to_clear: list[dict[str, str]] = []
+	skipped: list[dict[str, str]] = []
+
+	def _maybe_clear_password(*, fieldname: str, vault_key: str) -> None:
+		try:
+			current = doc.get_password(fieldname, raise_exception=False)
+		except Exception:
+			current = None
+		if not current:
+			return
+		if only_if_in_vault and not _vault_has(vault_key):
+			skipped.append({"field": fieldname, "vault_key": vault_key, "reason": "missing_in_vault"})
+			return
+		to_clear.append({"field": fieldname, "vault_key": vault_key, "type": "password"})
+		if dry_run:
+			return
+		frappe.db.set_value(doc.doctype, doc.name, fieldname, "", update_modified=False)
+		remove_encrypted_password(doc.doctype, doc.name, fieldname)
+
+	def _maybe_clear_data(*, fieldname: str, vault_key: str) -> None:
+		current = str(getattr(doc, fieldname, "") or "").strip()
+		if not current:
+			return
+		if only_if_in_vault and not _vault_has(vault_key):
+			skipped.append({"field": fieldname, "vault_key": vault_key, "reason": "missing_in_vault"})
+			return
+		to_clear.append({"field": fieldname, "vault_key": vault_key, "type": "data"})
+		if dry_run:
+			return
+		frappe.db.set_value(doc.doctype, doc.name, fieldname, "", update_modified=False)
+
+	# Password fields
+	_maybe_clear_password(fieldname="telegram_bot_token", vault_key="FERUM_TELEGRAM_BOT_TOKEN")
+	_maybe_clear_password(fieldname="telegram_webhook_secret", vault_key="FERUM_TELEGRAM_WEBHOOK_SECRET")
+	_maybe_clear_password(fieldname="jwt_secret", vault_key="FERUM_JWT_SECRET")
+
+	# Data fields that often carry secrets
+	_maybe_clear_data(fieldname="sentry_dsn", vault_key="SENTRY_DSN")
+
+	if not dry_run and to_clear:
+		frappe.clear_cache()
+
+	return {
+		"ok": True,
+		"dry_run": dry_run,
+		"only_if_in_vault": only_if_in_vault,
+		"would_clear": to_clear if dry_run else [],
+		"cleared": [] if dry_run else to_clear,
+		"skipped": skipped,
+		"vault_keys_checked": sorted({i["vault_key"] for i in (to_clear + skipped)}),
 	}

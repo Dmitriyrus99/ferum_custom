@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 
 import httpx
 
@@ -17,11 +16,7 @@ def _telegram_bot_token() -> str:
 	(`apps/ferum_custom/telegram_bot`). This module is intentionally minimal and must not
 	import aiogram (heavy import and unnecessary for simple notifications).
 	"""
-	return (
-		(settings.TELEGRAM_BOT_TOKEN or "").strip()
-		or (os.getenv("FERUM_TELEGRAM_BOT_TOKEN") or "").strip()
-		or (os.getenv("TELEGRAM_BOT_TOKEN") or "").strip()
-	)
+	return (settings.TELEGRAM_BOT_TOKEN or "").strip()
 
 
 async def send_telegram_notification(chat_id: int, text: str) -> None:

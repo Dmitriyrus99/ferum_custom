@@ -1,11 +1,11 @@
 {
   "ok": true,
-  "generated_at": "2026-02-09T13:28:23.541309",
+  "generated_at": "2026-02-09T13:46:49.771926",
   "site": "erpclone.ferumrus.ru",
   "issues": [],
   "system_health": {
     "ok": true,
-    "generated_at": "2026-02-09T13:28:23.900210",
+    "generated_at": "2026-02-09T13:46:50.684676",
     "wkhtmltopdf": {
       "installed": true,
       "version": "wkhtmltopdf 0.12.6"

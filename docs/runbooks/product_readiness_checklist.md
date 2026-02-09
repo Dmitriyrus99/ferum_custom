@@ -30,6 +30,8 @@
 
 Цель: **Vault → генерация `.env`/`site_config.json` → процессы bench**.
 
+Runbook по Vault/AppRole/cutover: `docs/runbooks/vault.md`.
+
 1. Привести `.env.example` к виду шаблона (без секретов), а реальные значения хранить:
    - в Vault (предпочтительно) или
    - в защищённом секрет‑хранилище CI/CD.

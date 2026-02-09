@@ -115,6 +115,13 @@ Validation executed:
 - Then apply:
   - `bench --site <site> execute ferum_custom.api.vault.sync_settings_to_vault --kwargs \"{'dry_run': 0, 'only_missing': 1}\"`
 
+Optional cutover (remove secrets from DB after verifying Vault has them):
+
+- dry-run:
+  - `bench --site <site> execute ferum_custom.api.vault.clear_settings_secrets --kwargs \"{'dry_run': 1, 'only_if_in_vault': 1}\"`
+- apply:
+  - `bench --site <site> execute ferum_custom.api.vault.clear_settings_secrets --kwargs \"{'dry_run': 0, 'only_if_in_vault': 1}\"`
+
 3) Verify:
 
 - `bench --site <site> execute ferum_custom.api.system_health.status`

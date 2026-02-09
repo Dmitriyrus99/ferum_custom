@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import mimetypes
-import os
 from pathlib import Path
 
 import frappe
 from frappe import _
 from frappe.model.document import Document
+
+from ferum_custom.integrations.google_drive_folders import get_drive_service, root_folder_id
 
 try:
 	from google.oauth2 import service_account
@@ -21,24 +22,9 @@ except Exception:
 	GOOGLE_DRIVE_INTEGRATION_ENABLED = False
 
 
-def _get_conf(key: str) -> str | None:
-	val = frappe.conf.get(key) if hasattr(frappe, "conf") else None
-	if val is None:
-		val = os.getenv(key)
-	if val is None:
-		return None
-	val = str(val).strip()
-	return val or None
-
-
-def _service_account_key_path() -> str:
-	return _get_conf("google_drive_service_account_key_path") or frappe.get_site_path(
-		"private", "keys", "google_drive_service_account.json"
-	)
-
-
 def _drive_folder_id() -> str | None:
-	return _get_conf("google_drive_folder_id") or _get_conf("ferum_google_drive_folder_id")
+	# Keep legacy keys supported via unified settings layer.
+	return root_folder_id()
 
 
 def _resolve_file_path(file_url: str) -> Path:
@@ -81,18 +67,7 @@ class CustomAttachment(Document):
 			self.delete_from_google_drive()
 
 	def _get_drive_service(self):
-		if not GOOGLE_DRIVE_INTEGRATION_ENABLED:
-			frappe.throw(_("Google Drive integration is disabled (missing google api libraries)."))
-
-		key_path = _service_account_key_path()
-		if not os.path.exists(key_path):
-			frappe.throw(_("Google Drive service account key file not found at: {0}").format(key_path))
-
-		credentials = service_account.Credentials.from_service_account_file(  # type: ignore[union-attr]
-			key_path,
-			scopes=["https://www.googleapis.com/auth/drive"],
-		)
-		return build("drive", "v3", credentials=credentials, cache_discovery=False)  # type: ignore[misc]
+		return get_drive_service()
 
 	def upload_to_google_drive(self):
 		file_url = getattr(self, "file_url", None)
