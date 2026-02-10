@@ -120,6 +120,9 @@ app_license = "mit"
 permission_query_conditions = {
 	"Contract": "ferum_custom.security.portal_permissions.contract_permission_query_conditions",
 	"File": "ferum_custom.security.file_permissions.file_permission_query_conditions",
+	"Project Site": "ferum_custom.security.project_site_permissions.project_site_permission_query_conditions",
+	"Service Logbook": "ferum_custom.security.project_site_permissions.service_logbook_permission_query_conditions",
+	"Service Log Entry": "ferum_custom.security.project_site_permissions.service_log_entry_permission_query_conditions",
 }
 
 has_permission = {
@@ -130,6 +133,9 @@ has_permission = {
 	"Service Project": "ferum_custom.security.service_project_permissions.service_project_has_permission",
 	"Service Object": "ferum_custom.security.service_object_permissions.service_object_has_permission",
 	"File": "ferum_custom.security.file_permissions.file_has_permission",
+	"Project Site": "ferum_custom.security.project_site_permissions.project_site_has_permission",
+	"Service Logbook": "ferum_custom.security.project_site_permissions.service_logbook_has_permission",
+	"Service Log Entry": "ferum_custom.security.project_site_permissions.service_log_entry_has_permission",
 }
 
 # DocType Class
