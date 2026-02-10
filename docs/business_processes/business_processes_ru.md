@@ -1,211 +1,235 @@
-# Ferum ERP — описание бизнес‑процессов (AS‑IS)
+# Ferum ERP — описание бизнес‑процессов (AS‑IS, актуально по коду)
 
 Дата: 2026‑02‑10  
 Контур: ERPNext/Frappe v15 + кастомное приложение `ferum_custom`.
 
-Документ фиксирует **текущую реализованную модель (AS‑IS)**: какие процессы поддерживаются, какими объектами данных (DocType) они представлены, какие роли участвуют, и где находятся ключевые автоматизации/интеграции.
+Документ фиксирует **реально реализованные процессы** и их привязку к объектной модели (DocType), хукам, API и интеграциям.
 
-> Примечание: часть старых процессов/сущностей (`Service Project`, `Service Object`) сохранена для обратной совместимости и истории, но основной управленческий контур смещён в стандартный ERPNext `Project` (с кастомными полями P0) и таблицу объектов проекта `Project Site`.
+См. также:
 
-## 1) Сквозная цепочка процессов (карта)
+- целевая модель объектов: `docs/architecture/project_site_tobe.md`
+- “Project как контейнер”: `docs/architecture/project_as_container.md`
+- runbook Drive‑структуры: `docs/runbooks/google_drive_structure.md`
 
-```mermaid
-flowchart LR
-  A[Тендер/Договор] --> B[Проект (Project)]
-  B --> C[Объекты проекта (Project Site)]
-  C --> D[Заявки (Service Request)]
-  D --> E[Отчёт о работах (Service Report)]
-  E --> F[Финансы (Invoice/Sales Invoice)]
-  B --> G[Документооборот проекта (File → Google Drive)]
-  D --> H[Фото/вложения по заявкам]
-  subgraph Integrations
-    T[Telegram bot] --- D
-    GD[Google Drive] --- G
-    V[Vault] --- CFG[Settings layer]
-  end
-```
+---
 
-## 2) Роли (кто делает что)
+## 1) Контуры системы (каналы и интерфейсы)
 
-Ключевые роли в текущем контуре:
+**ERPNext Desk (основной интерфейс):**
+
+- управление договорами/проектами/объектами
+- создание и обработка заявок (Service Request)
+- оформление отчётов о работах (Service Report)
+- реестр счетов (Invoice) и актирование (ServiceAct/ActSchedule)
+- загрузка и просмотр документов проекта (File → Google Drive)
+
+**Telegram‑бот (self‑service + поле):**
+
+- регистрация пользователя через email‑код (ERP хранит связку chat_id ↔ User)
+- выбор проекта/объекта и создание заявок
+- список “мои заявки”
+- загрузка вложений к заявке и “обследование” (фото/файлы) прямо в Google Drive
+
+**Google Drive (единое хранилище):**
+
+- детерминированная структура папок проекта + папок объектов
+- проектные документы загружаются напрямую в Drive, а в ERP хранится корректный `file_url` (webViewLink)
+
+**Vault (опционально, для секретов/конфигурации):**
+
+- единый typed‑settings слой читает настройки из `frappe.conf` → `os.environ` → Vault KV → `Ferum Custom Settings`
+
+---
+
+## 2) Роли и модель доступа (AS‑IS)
+
+Ключевые роли:
 
 - **Administrator / System Manager** — полный доступ, настройки, миграции, интеграции.
-- **Project Manager / Projects Manager** — ведение проекта, контроль процессов, документы/коммуникации, доступ к проектам.
-- **Office Manager / Ferum Office Manager** — документооборот (почта/сканы), помощь в операционной работе.
-- **Service Engineer** — работа по заявкам, фото/обследования, доступ к объектам и проектам в своей зоне.
-- **Client** — ограниченный доступ к проектным документам (разрешённые типы), заявкам/статусам (в рамках доступных проектов).
+- **Project Manager / Projects Manager** — управление проектами, доступ к документам, контроль заявок.
+- **Office Manager / Ferum Office Manager** — документооборот, помощь в регистрации/заявках.
+- **Engineer / Service Engineer** — доступ к заявкам и объектам в зоне ответственности.
+- **Client** — ограниченный доступ в рамках своего клиента и доступных проектов/документов.
 
-Механика ограничения доступа на уровне данных (AS‑IS):
+Базовая логика доступа к проекту (используется и в API/боте):
 
 - `Project.project_manager == user`
-- `Project.users` (стандартная таблица участников проекта)
-- `Project Site.default_engineer == user`
-- `User Permission` на `Project`/`Customer` и связь `Contact.user -> Customer`
+- `Project.users` содержит пользователя
+- пользователь назначен инженером на объект (`Project Site.default_engineer`)
+- `User Permission` на `Project` или на `Customer` (в т.ч. через `Contact.user → Customer`)
 
-Реализация: `ferum_custom/security/project_access.py`.
+Реализация: `ferum_custom/security/project_access.py`, плюс PQC/has_permission для `Project Site` и журнала:
+`ferum_custom/security/project_site_permissions.py`.
 
-## 3) Объектная модель (DocTypes) — что является “истиной”
+---
 
-### Управляющий контур
+## 3) Объектная модель (DocTypes) — на чём держатся процессы
 
-- **Contract** (стандартный ERPNext) — договор с заказчиком (в системе принудительно `party_type=Customer`).
-- **Project** (стандартный ERPNext) — главный контейнер управления; дополнен кастомными полями P0 (этапы, дедлайны, чек‑листы, исходящая почта, ссылки на Drive).
-- **Project Site** (дочерняя таблица, `istable=1`) — “объект” в рамках проекта: имя/адрес/инженер/ссылка на Drive.
+### 3.1 Управляющий контур
 
-### Операционный сервисный контур
+- **Contract** (ERPNext) — договор с заказчиком; валидация `party_type=Customer`.
+  - хуки: `ferum_custom/services/contract_project_sync.py`
+- **Project** (ERPNext) — управленческий контейнер, 1:1 связан с Contract (для Active).
+  - авто‑создание/синхронизация из Contract: `ensure_project_for_contract`
+  - P0‑цикл/гейты/эскалации (если включён флаг `ferum_p0_enabled`): `ferum_custom/services/project_full_cycle.py`, `ferum_custom/services/project_escalations.py`
 
-- **Service Request** — заявка (тикет) на обслуживание:
-  - новый контур: `erp_project` (Link Project) + `project_site` (Link Project Site)
-  - legacy контур: `service_object` (Link Service Object)
-- **Service Report** — отчёт/акт по заявке (табличные работы + документы).
+### 3.2 Объекты обслуживания (Project Site)
 
-### Финансы (AS‑IS)
+Сейчас поддерживаются **две формы хранения** (для обратной совместимости):
 
-- **Invoice** (кастомный DocType) — внутренний трекинг счетов:
-  - может связываться с `Contract`, `Project` (кастом‑поле `erpnext_project`), `Sales Invoice`
-  - при submit умеет синхронизироваться в Google Sheets (опционально; зависит от наличия библиотеки `gspread`)
+- **`Project Site` (truth, `istable=0`)** — основной объект обслуживания, на который ссылаются новые процессы.
+- **`Project Site Row` (legacy child table, `istable=1`)** — строки в `Project.project_sites`, оставлены для совместимости/истории.
 
-### Документы (AS‑IS)
+Миграции (идемпотентно):
 
-- **File** (стандартный DocType) — используется как единый механизм учёта файлов.
-- “Документы проекта/контракта” реализованы как `File`, привязанные к `Project` через `attached_to_doctype=Project` и `attached_to_field=ferum_project_documents`, с обязательными метаданными:
-  - `ferum_doc_title` (Наименование документа)
-  - `ferum_doc_type` (Тип документа)
-  - `ferum_contract` (опционально)
-  - `ferum_drive_file_id` (идентификатор файла в Drive)
+- переименование legacy `Project Site` → `Project Site Row`: `ferum_custom/patches/v15_10/rename_legacy_project_site_doctype.py`
+- перенос rows → truth sites + ремонт имен (чтобы `Service Request.project_site` не “ломался”):  
+  `ferum_custom/patches/v15_10/migrate_project_site_row_to_truth.py`,  
+  `ferum_custom/patches/v15_10/repair_project_site_truth_names.py`
 
-Реализация: `ferum_custom/api/project_documents.py`, `ferum_custom/services/project_documents.py`, `ferum_custom/security/file_permissions.py`.
+### 3.3 Операционный сервисный контур
 
-## 4) Процесс BP‑01: Договор → Проект (инициация)
+- **Service Request** — заявка:
+  - привязка: `erp_project` (Project) + `project_site` (Project Site)
+  - legacy‑поле: `service_object` (Service Object) остаётся для совместимости ряда сценариев
+  - фиксация источника/времени: `registered_datetime`, `reported_datetime`, `source_channel`, `source_reference`, `source_evidence_file`
+  - SLA: вычисляется от `reported_datetime` (если задано) иначе от `registered_datetime/creation`
+  - серверные проверки: `ferum_custom/ferum_custom/doctype/service_request/service_request.py`
+- **Service Report** — отчёт о работах:
+  - содержит `work_items` и `documents`
+  - при `on_submit` закрывает заявку до статуса `Completed`: `ferum_custom/ferum_custom/doctype/service_report/service_report.py`
 
-**Цель:** создать управляемый проект с ответственными, сроками и структурой данных под цикл работ.
+### 3.4 Актирование и счета
 
-**Триггер (AS‑IS):**
+- **ActSchedule** — планирование актов по периодам (на базе Contract).
+- **ServiceAct** — акт; при переходе в `Signed` выполняет связанные действия (в т.ч. обновление статуса расписания, опционально создание Sales Invoice).
+  - логика: `ferum_custom/services/acts.py`
+- **Invoice** (кастомный реестр счетов) — статусы Draft/Sent/Paid/… + опциональная синхронизация в Google Sheets (если установлен `gspread`).
+  - логика: `ferum_custom/ferum_custom/doctype/invoice/invoice.py`
 
-- Договор `Contract` переводится в `status=Active` → создаётся/синхронизируется `Project` (1:1).
+### 3.5 Документы проекта (File → Google Drive)
 
-**Основные шаги:**
+Функциональность “Документы проекта” реализована **через стандартный DocType `File`** с метаданными (Custom Fields) и серверной валидацией:
 
-1) Создать/актуализировать `Contract` (в системе закрепляется `party_type=Customer`).  
-2) При `Active` система создаёт `Project` и связывает его с `Contract` (`Project.contract`), синхронизирует базовые поля (customer/company/PM/dates).  
-3) В `Project` ведётся этап `ferum_stage` (P0) и контрольные дедлайны/гейты (если включено `ferum_p0_enabled`).  
+- обязательные поля: `ferum_doc_title`, `ferum_doc_type`
+- хранение: `file_url` указывает на Google Drive; `ferum_drive_file_id` хранит id
+- типы документов: фиксированный перечень в `ferum_custom/services/project_documents_config.py`
+- серверная валидация File: `ferum_custom/services/project_documents.py`
+- API загрузки/листа: `ferum_custom/api/project_documents.py`
 
-**Автоматизации:**
+---
 
-- enforce party_type/customer: `ferum_custom/services/contract_project_sync.py`
-- валидация уникальности `Contract ↔ Project`: `ferum_custom/services/contract_project_sync.py`
-- P0‑гейты/автопродвижение/дефолты дедлайнов: `ferum_custom/services/project_full_cycle.py`
-- ежедневные эскалации по дедлайнам: `ferum_custom/services/project_escalations.py`
+## 4) Сквозные бизнес‑процессы (AS‑IS)
 
-## 5) Процесс BP‑02: Объекты проекта (Project Sites)
+### BP‑01 — Договор → Проект (Contract → Project 1:1)
 
-**Цель:** зафиксировать все обслуживаемые объекты/адреса внутри проекта и назначить инженеров.
+**Цель:** обеспечить единый управленческий контейнер Project для активного договора.
 
-**AS‑IS:**
+1) Создаётся/обновляется `Contract`.
+2) При `status=Active` система:
+   - валидирует `party_type=Customer`
+   - создаёт/находит связанный `Project` (строго 1:1)
+   - синхронизирует поля Customer/Company/PM/даты
 
-- Объекты проекта ведутся как строки таблицы `Project Site` внутри `Project`.
-- Для инженеров доступ к проекту может открываться через назначение `Project Site.default_engineer`.
+Код: `ferum_custom/services/contract_project_sync.py` (hooks см. `ferum_custom/hooks.py`).
 
-**Автоматизации/интеграции:**
+### BP‑02 — Управление проектом (P0‑цикл, опционально)
 
-- Для каждого объекта можно создать Drive‑папку (см. BP‑04 и runbook структуры Drive).
+**Цель:** “проект под контролем” через этапы/гейты/дедлайны и эскалации.
 
-## 6) Процесс BP‑03: Документооборот проекта/контракта (сканы)
+- включается флагом `Project.ferum_p0_enabled=1`
+- гейты стадий проверяются на `Project.validate`
+- ежедневный scheduler шлёт эскалации по дедлайнам PM/директору (email + telegram best‑effort)
 
-**Цель:** юридически корректное хранение документов проекта (договоры, закрывающие, корреспонденция и т.д.) с контролем доступа.
+Код: `ferum_custom/services/project_full_cycle.py`, `ferum_custom/services/project_escalations.py`.
 
-**Правила AS‑IS:**
+### BP‑03 — Объекты (Project Site)
 
-- Загрузка **разрешена только в контексте проекта** (Project обязателен).
-- В ERP создаётся запись `File` с метаданными + ссылкой на Drive (`file_url` = webViewLink).
-- Физическое хранение — Google Drive, структура детерминирована и одинакова для всех проектов (русские имена папок).
+**Цель:** иметь однозначные “объекты обслуживания” с адресами и назначением инженера.
 
-**Типы документов (AS‑IS):**
+- truth объект: `Project Site` (используется в новых заявках/уведомлениях/Drive‑папках)
+- legacy таблица `Project.project_sites` остаётся как историческая форма ввода/хранения
 
-Справочник типов фиксирован в коде: `ferum_custom/services/project_documents_config.py`.
+Проверки:
 
-**Права доступа (AS‑IS):**
+- принадлежность объекта проекту проверяется при создании заявки (Desk/API/бот): `ferum_custom/utils/project_sites.py`
 
-- Upload: роли из `UPLOAD_ROLES` (PM/Office/System Manager).
-- View:
-  - внутренние пользователи — в рамках доступа к проекту,
-  - `Client` — только разрешённые типы (`CLIENT_ALLOWED_TYPES`).
+### BP‑04 — Заявки (Service Request)
 
-**Где смотреть структуру папок (актуально):**
+**Источники создания:**
 
-- `docs/runbooks/google_drive_structure.md` (версия `ru_v1`).
+- ERPNext Desk (офис/PM)
+- Telegram bot (через ERP API, с проверками доступа)
+- регламент (scheduler) — текущая реализация генерирует заявки по legacy `service_object` (требует постепенной модернизации под `project_site`)
 
-## 7) Процесс BP‑04: Заявки на обслуживание (Service Request)
+**Ключевая логика:**
 
-**Цель:** принимать, распределять и контролировать выполнение работ по объектам проекта.
+- статусы и переходы валидируются на сервере
+- SLA дедлайн считается от `reported_datetime` (если задан), иначе от регистрации
+- для внешних источников при разнице `reported_datetime` vs `registered_datetime` требуется `source_reference` или `source_evidence_file`
 
-**Источники создания (AS‑IS):**
+Код: `ferum_custom/ferum_custom/doctype/service_request/service_request.py`,  
+уведомления: `ferum_custom/notifications.py`,  
+регламент: `ferum_custom/services/service_schedule.py` (legacy).
 
-- ERPNext Desk (ручной ввод офисом/PM).
-- Telegram bot (создание заявок/просмотр, в рамках доступных проектов).
-- Регламентные заявки: ежедневный scheduler генерирует заявки по графику.
+### BP‑05 — Отчёт о работах (Service Report) → закрытие заявки
 
-**Ключевые данные заявки (AS‑IS):**
+**Цель:** документировать выполненные работы и закрыть заявку корректно.
 
-- `erp_project` + `project_site` (предпочтительно)
-- `service_object` (legacy, сохраняется для истории/части интеграций)
-- `assigned_to`, `priority`, `status`, `description`
+1) Создаётся `Service Report` по заявке.
+2) В `validate`:
+   - пересчитываются суммы work‑items
+   - проверяется наличие вложений (Document Items)
+3) При `on_submit`:
+   - `Service Request.linked_report = Service Report`
+   - `Service Request.status = Completed`
 
-**Автоматизации (AS‑IS):**
+Код: `ferum_custom/ferum_custom/doctype/service_report/service_report.py`.
 
-- Уведомления о создании/смене статуса (Telegram/email, best‑effort): `ferum_custom/notifications.py`
-- Генерация регламентных заявок: `ferum_custom/services/service_schedule.py`
+### BP‑06 — Документы проекта (сканы/письма/акты) в Google Drive
 
-## 8) Процесс BP‑05: Отчёт о работах (Service Report)
+**Цель:** юридически корректное и структурированное хранение документов по проекту.
 
-**Цель:** зафиксировать выполненные работы и доказательную базу (таблица работ + документы).
+1) Пользователь загружает файл через UI “Документы проекта”.
+2) Сервер:
+   - проверяет роль + доступ к проекту
+   - создаёт/проверяет структуру Drive‑папок проекта
+   - загружает файл в Drive в детерминированную категорию
+   - создаёт `File` с метаданными и `file_url=Drive webViewLink`
+3) Для Client‑пользователя выдача ограничивается типами (`CLIENT_ALLOWED_TYPES`).
 
-**AS‑IS:**
+Код: `ferum_custom/api/project_documents.py`, `ferum_custom/services/project_documents.py`,  
+структура папок: `ferum_custom/api/project_drive.py` + `docs/runbooks/google_drive_structure.md`.
 
-- `Service Report` создаётся и связывается с `Service Request`.
-- Содержит:
-  - `Service Report Work Item` — перечень работ/объёмов/стоимости
-  - `Service Report Document Item` — документы/файлы (сканы/фото)
-- При необходимости используется для дальнейшего выставления счетов/закрывающих.
+### BP‑07 — Telegram‑бот (операционные сценарии)
 
-Уведомления: `ferum_custom/notifications.py` (события `Service Report`).
+**Цель:** снизить ручной ввод и ускорить работу инженеров/клиентов.
 
-## 9) Процесс BP‑06: Финансовые документы (Invoice / Sales Invoice)
+- регистрация: `/register <email>` → код на email → создание `Telegram User Link`
+- “проекты/объекты”: списки фильтруются по ERP‑правам (Project membership + правила доступа)
+- создание заявки: проект → объект → заголовок/приоритет/описание → `Service Request`
+- вложения/обследование: файлы/фото уходят в Drive папку объекта/раздела и фиксируются ссылками
 
-**Цель:** вести внутренний реестр выставленных и полученных счетов + связать их с проектами.
+ERP API: `ferum_custom/api/telegram_bot.py`  
+код бота: `ferum_custom/integrations/telegram_bot/*`
 
-**AS‑IS:**
+---
 
-- Основной реестр — кастомный DocType `Invoice`:
-  - контрагент (Customer/Subcontractor),
-  - суммы/даты/статусы,
-  - связь с `Contract` и `Project` (через кастом‑поле `erpnext_project`, если создано на сайте),
-  - опциональная связь с `Sales Invoice`.
-- При submit `Invoice` выполняется синхронизация в Google Sheets (если в окружении установлен `gspread` и доступна учётка).
+## 5) Автоматизации и контроль (что проверяет целостность)
 
-## 10) Интеграции (где “стыкуются” процессы)
+- хуки DocType: `ferum_custom/hooks.py`
+- runtime audit: `bench --site <site> execute ferum_custom.setup.audit.run --kwargs \"{'write_report': 1}\"`
+  - импорты hook‑таргетов
+  - мета doctypes/reports/flows
+  - единичные checks по Workspaces (“Объекты”)
+  - health интеграций (wkhtmltopdf/telegram/fastapi/vault/drive)
 
-### Telegram bot (операции + self‑service)
+Отчёты audit сохраняются в `docs/audit/`.
 
-- Команды / работа через webhook/polling.
-- Доступ к проектам берётся из ERP (Project membership + права).
-- Основной API для бота: `ferum_custom/api/telegram_bot.py`.
-Runbook: `docs/runbooks/telegram_bot.md`.
+---
 
-### Google Drive (единое хранилище документов)
+## 6) Legacy/ограничения (важно для эксплуатации)
 
-- Папки проекта и документов создаются детерминированно.
-- Загрузка проектных документов идёт сразу в Drive; в ERP хранится ссылка.
-Runbook: `docs/runbooks/google_drive_structure.md`.
-
-### Vault (единый источник секретов/конфигурации)
-
-- Реализован unified settings слой: `frappe.conf` → env → Vault KV → `Ferum Custom Settings`.
-- Есть ручные инструменты миграции в Vault и cutover.
-Runbook: `docs/runbooks/vault.md`.
-
-## 11) Контроль качества процесса (операционная проверка)
-
-- Runtime audit (smoke): `bench --site <site> execute ferum_custom.setup.audit.run --kwargs "{'write_report': 1}"`
-  - проверяет импорты хуков, мету Doctype/Report, ссылки workspace, health интеграций.
-Runbook: `docs/runbooks/runtime_audit.md`.
+- `Service Project` / `Service Object` сохранены как legacy‑контур (часть сценариев/регламент).
+- Генератор регламентных заявок (`service_schedule.py`) ещё опирается на `service_object` и требует модернизации под `project_site`.
+- FastAPI backend содержит часть API/логики и совместимостные обвязки; не все endpoint’ы реализованы как “боевые” (см. `ferum_custom/integrations/fastapi_backend/routers/*`).

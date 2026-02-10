@@ -1,22 +1,25 @@
-# Business Processes
+# Бизнес‑процессы (документы)
 
-- This directory collects high-level descriptions of the key business workflows used in Ferum Custom.
-- The diagram below shows the typical sequence from project initiation through payroll.
+Каталог содержит описания ключевых процессов Ferum ERP (ERPNext/Frappe + `ferum_custom`).
 
-- ```mermaid
+```mermaid
 flowchart LR
-    A[Project & Contract] --> B[Service Request] --> C[Work Reporting] --> D[Invoicing & Payments] --> E[HR & Payroll]
+    A[Contract/Project (контейнер)] --> B[Project Site (объекты)]
+    B --> C[Service Request] --> D[Service Report] --> E[Acts/Invoices]
+    E --> F[Payments/Closing]
 ```
 
-Document & Attachment Management along with Monitoring, Analytics & Security support all stages of the process chain.
+Документы по вложениям/Drive и по мониторингу/безопасности поддерживают все стадии цепочки.
 
-## Process Guides
+## Гайды
 
-- [Описание бизнес‑процессов (AS‑IS, RU)](business_processes_ru.md)
-- [Project & Contract Management](project_contract_management.md)
-- [Service Request Management](service_request_management.md)
-- [Work Reporting](work_reporting.md)
-- [Invoicing & Payments](invoicing_payments.md)
-- [HR & Payroll Management](hr_payroll_management.md)
-- [Document & Attachment Management](document_attachment_management.md)
-- [Monitoring, Analytics & Security](monitoring_analytics_security_bp.md)
+- [Описание бизнес‑процессов (AS‑IS, актуально по коду)](business_processes_ru.md)
+- [Описание бизнес‑процессов (AS‑IS, legacy версия)](business_processes_ru_legacy.md)
+- [Контракт/проект: полный цикл (Project контейнер, Site истина)](erpnext_project_full_cycle.md)
+- [Договоры и проекты](project_contract_management.md)
+- [Заявки (Service Request)](service_request_management.md)
+- [Отчётность по работам (Service Report)](work_reporting.md)
+- [Акты/счета/оплата](invoicing_payments.md)
+- [HR/зарплата](hr_payroll_management.md)
+- [Документы и вложения (File + Google Drive)](document_attachment_management.md)
+- [Мониторинг/аналитика/безопасность](monitoring_analytics_security_bp.md)

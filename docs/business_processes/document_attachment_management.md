@@ -1,56 +1,128 @@
-# Document & Attachment Management (Centralized File Handling)
+# Документы и вложения (ERPNext `File` + Google Drive)
 
 ### Figure 6: Document & Attachment Management BPMN
 
 ![Document & Attachment Management BPMN](../images/document_attachment_management_process.svg)
 
-Throughout all the above processes, a lot of files and documents are generated – contracts, acts, invoices, photos, etc.
-- This part of the system manages those files to ensure they are stored securely and accessible to those who need them, while keeping the ERP database lean.
+Документ фиксирует **AS‑IS реализацию** работы с файлами в Ferum ERP: где и как хранятся документы (сервер/Google Drive), какие метаданные обязательны, и как устроены проверки прав доступа.
 
-### Uploading & Linking
+Ключевой принцип: **используем стандартный DocType `File`** и Drive‑интеграцию. Отдельные “обёртки” (`Custom Attachment`) остаются только как legacy‑контур там, где они уже встроены в модели.
 
-- Users in all roles upload documents to the system at various stages: a contract PDF attached to a Service Project, photos attached to a Service Request, signed acts attached to a Service Report, invoices attached to Invoice records, and so on.
-- In ERPNext, attachments can be handled using the built-in file manager, but to add more structure, Ferum Customizations defines custom DocTypes: originally PhotoAttachment and DocumentAttachment were considered, but the design is to unify these into a single CustomAttachment doctype for simplicity.
-- A CustomAttachment record might store metadata about the file (filename, type, linked document type and ID, uploader, timestamp) and either the file content or a link to it.
+См. также:
 
-- When a user attaches a file through a form (say, adds a PDF to a ServiceProject), the system creates a CustomAttachment entry and links it to that project.
-- The file itself is immediately uploaded to the server (and subsequently will be synced to Google Drive).
-- Each business document (Project, Request, Report, etc.) can thus have a list of related attachments in ERPNext, visible on the form for easy reference.
+- структура папок на Drive: `docs/runbooks/google_drive_structure.md`
+- типы проектных документов: `ferum_custom/services/project_documents_config.py`
+- серверная валидация File‑метаданных: `ferum_custom/services/project_documents.py`
+- API загрузки/листинга документов: `ferum_custom/api/project_documents.py`
+- контроль доступа к файлам: `ferum_custom/security/file_permissions.py`
 
-### Document Lifecycle – Approval & Signing
+---
 
-- Many documents go through approval workflows outside the system.
-- For instance, a draft contract might be edited and then approved by the director before signing, or a work act might need signatures from the client.
-- Ferum Customizations doesn’t fully automate content editing or digital signatures (unless integrated with an e-sign service), but it tracks the status by the presence of attachments and status fields.
-- For example, a ServiceReport might have a field “Client Signed” or an attachment of the client-signed scan.
-- The system relies on users uploading the final signed versions.
+## 1) Сценарии хранения файлов (AS‑IS)
 
-- Approval steps (like the director approving a contract) are typically done via a combination of communication (perhaps the director gets notified to review the contract PDF attached to the project) and setting a status field or checkmark once approved.
+В системе параллельно используются несколько сценариев:
 
-### Storage in Google Drive
+1) **Проектные документы (юридически значимые):** сканы договоров/писем/актов и т.п.  
+   Хранение: **Drive‑first**, в ERP создаётся `File` со ссылкой на Drive.
 
-- A key design decision is to store most files in Google Drive rather than on the local server.
-- This gives virtually unlimited storage, easier sharing, and an off-site backup.
-- All attachments added via ERPNext are automatically pushed to a specific Google Drive folder structure.
-- The business decided that maintaining separate folders per project is not strictly necessary – instead, all files can reside in a central repository (with naming conventions to tie them to projects/requests).
-- For example, a file might be named or tagged with the project code and request ID.
-- Alternatively, the integration could create subfolders by project for better organization; the current plan leans toward a single store for simplicity, but this is configurable.
-- Regardless, once a file is uploaded in ERPNext, the system (via the custom backend or a scheduled task) will upload it to Drive and possibly replace the file URL with a Drive link.
+2) **Desk‑вложения в карточках (операционные):** вложения/фото в `Service Request` и т.п.  
+   Хранение: стандартные ERPNext вложения (`File` в `sites/*/public|private`), без обязательной загрузки в Drive.
 
-### File Deletion
+3) **Bot‑доказательства/вложения:** файлы из Telegram загружаются **напрямую в Drive** в папки объекта/заявки, а в ERP сохраняются ссылки (комментарии/поля).
 
-- To avoid orphaned files or clutter, Ferum Customizations implements a cleanup hook.
-- If a user deletes an attachment record from the system (say removing an incorrectly uploaded photo), the system will also remove the actual file from the storage (Drive) to keep things tidy.
-- A server script on the CustomAttachment DocType’s on_trash event calls the Google Drive API to delete the file from the cloud, provided it’s not linked elsewhere.
-- This prevents buildup of unneeded files and protects sensitive information from lingering in storage when it’s no longer tied to any record.
+4) **Legacy `Custom Attachment`:** используется в отдельных местах (например, документы в `Service Report`). Может загружать файл в Drive без проектной структуры.
 
-### Access Control
+---
 
-- Attachments inherit the permissions of the documents they are linked to.
-- For instance, a client can only see attachments on their own projects/requests; an engineer can see photos on requests he’s assigned to, etc.
-- This is managed implicitly by ERPNext’s permission system (since attachments are usually accessible via the parent document or via a file list filtered by permissions).
-- If needed, additional restrictions can be added such as marking certain attachments as private (requiring login to view).
+## 2) Проектные документы (основной юридический контур)
 
-- With this Document Management process, the company achieves a centralized repository of all important files.
-- No more scattered network drives or personal email attachments – everything is tied to the relevant record in the ERP, and stored in Google Drive which is secure and searchable.
-- It also means during audits or management reviews, one can pull up, for example, a project and immediately retrieve all its related files (contracts, acts, photos) in one place.
+### 2.1 Что считается “проектным документом”
+
+Проектный документ — это запись `File`, созданная через Ferum‑UI/endpoint и идентифицируемая так:
+
+- `attached_to_doctype = Project`
+- `attached_to_field = ferum_project_documents`
+
+Серверная валидация `File.validate` применяется только к таким `File`:  
+`ferum_custom/services/project_documents.py`.
+
+### 2.2 Обязательные метаданные
+
+Для юридически значимых документов обязательны:
+
+- `ferum_doc_title` — наименование документа
+- `ferum_doc_type` — тип документа (строгий whitelist)
+- `ferum_drive_file_id` — ID файла на Google Drive
+- `file_url` — Drive `webViewLink`
+
+Опционально:
+
+- `ferum_contract` — договор (если указан, валидируется, что он соответствует `Project.contract`)
+
+### 2.3 Где физически хранятся файлы
+
+Файл загружается **напрямую в Google Drive**, затем создаётся `File` со ссылкой:
+
+- `file_url = <Drive webViewLink>`
+- `is_private = 0` (доступ всё равно контролируется через ERP permissions/PQC)
+
+Папки создаются детерминированно (идемпотентно):
+
+- корень Drive (настройка) → `01_ОРГАНИЗАЦИЯ_*` → `01_ПРОЕКТЫ` → `<PROJECT_ID>`
+- внутри проекта: `01_ДОКУМЕНТЫ/` + подкаталоги по типам/периодам
+
+Роутинг по папкам реализован в `ferum_custom/api/project_documents.py` (`_doc_type_folder_segments`).
+
+### 2.4 Контекст проекта обязателен
+
+Загрузка “вне проекта” запрещена на сервере:
+
+- `upload_project_document` требует `project` и проверяет доступ пользователя к проекту
+- `upload_contract_document` требует `contract`, но всё равно привязывает документ к связанному `Project`
+
+### 2.5 Права доступа
+
+- загрузка: роль ∈ `UPLOAD_ROLES` + доступ к проекту (`user_has_project_access`)
+- просмотр: доступ к проекту
+- **Client**: просмотр ограничен whitelist типов (`CLIENT_ALLOWED_TYPES`)
+
+Реализация: `ferum_custom/security/file_permissions.py`.
+
+---
+
+## 3) Вложения заявок и доказательства (операционный контур)
+
+### 3.1 Desk‑вложения
+
+`Service Request` хранит вложения как стандартные поля:
+
+- `attachments` (Table → `Document Attachment Item`, поле `Attach`)
+- `photos` (Table → `Request Photo Attachment Item`, поле `Attach Image`)
+
+Физически это `File` в директории сайта.
+
+### 3.2 Bot‑вложения (Drive‑first, без `File`)
+
+Telegram‑бот загружает файлы в Drive и фиксирует ссылку в ERP:
+
+- “обследование” → папка объекта по секции чек‑листа (`upload_survey_evidence`)
+- вложения заявки → `02_ЗАЯВКИ/<SERVICE_REQUEST>/` (`upload_service_request_attachment`)
+
+Код: `ferum_custom/api/telegram_bot.py`.
+
+---
+
+## 4) Удаление файлов (AS‑IS)
+
+- `Custom Attachment`: при удалении записи удаляется и файл на Drive (`on_trash`).
+- `File` (проектные документы): **удаление `File` не удаляет файл на Drive** (в текущей реализации нет hook‑а на удаление Drive‑файла).
+
+Причина: без безопасного “reference counting” удаление в облаке может привести к потере доказательной базы.
+
+---
+
+## 5) Риски и ограничения
+
+- Модель хранения смешанная: Drive‑first для “Документов проекта” и bot‑вложений, локальные файлы для Desk‑вложений.
+- Legacy `Custom Attachment` не использует проектную структуру Drive и должен постепенно вытесняться.
+- Для юридически значимых файлов рекомендуется использовать именно “Документы проекта” (Drive‑first + метаданные + строгие проверки доступа).

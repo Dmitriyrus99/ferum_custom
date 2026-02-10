@@ -1,92 +1,139 @@
-# Monitoring, Analytics & Security (System Oversight and Reporting)
+# Мониторинг, аналитика и безопасность (AS‑IS: наблюдаемость + контроль конфигурации)
 
 ### Figure 7: Monitoring, Analytics & Security BPMN
 
 ![Monitoring, Analytics & Security BPMN](../images/monitoring_analytics_security_process.svg)
 
-This final process area covers how the system is monitored and how it provides analytical insights, as well as overarching security measures to keep the system reliable and safe.
-- Unlike previous processes, many of these are continuous or event-triggered system functions rather than user-driven workflows.
+Документ описывает **реально доступные механизмы** мониторинга, диагностики, аналитики и security‑контроля в Ferum ERP (ERPNext/Frappe + `ferum_custom` + внешние сервисы).
 
-### System Monitoring & Logs
+См. также:
 
-- Ferum Customizations logs all significant user actions and data changes.
-- ERPNext’s versioning feature tracks changes to documents (who changed what and when).
-- Additionally, a custom logging module records events like status transitions, approvals, and login attempts with timestamps.
-- The Administrator can review audit logs to trace any critical operation (e.g., who deleted a request or who marked an invoice as paid).
-- These logs are stored in the database and can be exported or archived.
-- The system also aggregates application logs (errors, warnings) which are important for debugging.
-- These are periodically archived to Google Drive as well (e.g., monthly compressing and offloading).
+- runtime audit: `ferum_custom/setup/audit.py`
+- health‑endpoint (Desk API): `ferum_custom/api/system_health.py`
+- валидация security‑настроек: `ferum_custom/config/validation.py`
+- Vault cutover/API: `ferum_custom/api/vault.py`, `ferum_custom/config/vault.py`
 
-- The deployment includes integration with Prometheus for live monitoring.
-- A Prometheus agent scrapes metrics exposed by the system – such as request response times, error rates, resource usage, number of open requests, etc.
-- – and stores them for visualization.
-- The custom backend might expose an HTTP /metrics endpoint providing metrics in Prometheus format.
-- Coupled with Grafana (if set up), this allows dashboards like “Number of open service tickets over time” or server CPU/memory graphs.
+---
 
-- For error tracking, Sentry is used.
-- The backend and possibly client code are configured with a Sentry DSN, so that any unhandled exception or error is reported to Sentry’s cloud dashboard.
-- This proactive alerting allows developers to catch issues (like a failure in the Google Sheets sync, or a bot command error) quickly and fix bugs.
+## 1) Логи и диагностика (операционный минимум)
 
-### Analytics & Reporting
+### 1.1 Где смотреть логи (bench)
 
-- The system generates analytics on operations and finances for decision-makers.
-- For example, it computes the average time to close service requests, the on-time completion rate (what percentage of requests are closed before their SLA due date), engineer utilization (how many requests each engineer handles, or hours worked vs capacity), project profitability (invoices vs costs per project), etc..
-- Many of these metrics are derived from the transactional data: resolution times from ServiceRequests, financials from Invoices, etc.
+В bench‑контуре логи сервисов находятся в `logs/` и `sites/<site>/logs/`, типовые файлы:
 
-- The custom backend includes an Analytics module that can aggregate this data on demand.
-- When, say, the General Director wants to see KPIs, they might use the Telegram bot command (e.g., /analytics or specific queries like /project_stats <ProjectID>).
-- The backend will query the ERPNext database for relevant data and compute the metrics.
-- To optimize performance, the system might cache these analytics results in memory or Redis for a short period (e.g., refresh every few hours), so that repeated requests (like daily KPI checks) are fast.
-- The analytics are delivered via the Telegram bot as formatted messages or simple charts.
-- For instance, the Director can get a message: “Open Requests: 5 (Avg age 2.3 days); Month’s Revenue: $50k; Overdue Invoices: 2 clients...” and so forth.
-- This gives leadership quick insight without needing to run reports in the ERP UI.
+- `logs/web.log`, `logs/web.error.log` — web‑процессы
+- `logs/worker*.log`, `logs/worker*.error.log` — очереди/воркеры
+- `logs/scheduler.log`, `logs/schedule.log`, `logs/schedule.error.log` — scheduler и задачи
+- `logs/socketio.log`, `logs/node-socketio*.log` — websocket/socketio
+- `logs/telegram-bot.log`, `logs/telegram-bot.error.log` — интеграция Telegram‑бота (если запущена как сервис)
+- `logs/frappe.log`, `logs/database.log` — агрегированные логи Frappe/DB
 
-### Security Measures
+Практика: при расследовании сначала фильтруем по времени и по ключевым словам (`Traceback`, `ValidationError`, `PermissionError`, `HttpError`).
 
-- Security underpins the entire system.
-- Authentication to the custom API is done via JWT tokens issued after users log in.
-- Additionally, two-factor authentication (2FA) is enforced for users with sensitive access (Admin, accountant, etc.), possibly using OTP codes sent to email or an authenticator app.
-- Within ERPNext, user accounts have strong passwords (stored as hashes) and can also use ERPNext’s 2FA by OTP if enabled.
+### 1.2 Runtime audit (проверка целостности кастомизации)
 
-### The system employs role-based authorization at every level
+В `ferum_custom` реализован runtime‑аудит, который помогает ловить “ломающие” регрессии:
 
-- API endpoints check the user’s role and permissions before allowing access (for example, an engineer trying to call an admin-only endpoint will get a 403 Forbidden).
-- In the backend, this is implemented with middleware/guards that verify JWT claims (like role = Admin).
-- In ERPNext, role permissions are configured for each DocType: e.g., Clients can only read ServiceRequest and ServiceProject where they are the customer, Engineers can read those where they are assigned, etc.
-- Complex permission rules like “Customer can only see their own data” are enforced via permission query conditions in ERPNext, ensuring even if a savvy user tried to access others’ data, the system filters it out at the database query level.
+- несуществующие модульные пути в hooks (ImportError)
+- битые Query Report’ы при пустых фильтрах (типовая причина 500 в UI)
+- Workflow’ы, ссылающиеся на несуществующие DocType
+- регрессии Workspaces (“Объекты” ведут на legacy роуты/разные URL)
+- health‑summary по интеграциям
 
-- Sensitive data in the database, such as personal identifiable information (phone numbers, emails of clients) or any confidential notes, are encrypted or hashed when possible.
-- For instance, ERPNext by default hashes user passwords.
-- The team may also choose to encrypt certain fields (ERPNext has an encryption feature for fields using AES).
-- At minimum, all backups are encrypted or stored in an access-controlled location to prevent data leakage.
+Команда (пример):
 
-### Network security
+- `bench --site test_site execute ferum_custom.setup.audit.run --kwargs "{'write_report': 1}"`
 
-- All web traffic runs through HTTPS with TLS encryption.
-- In production, Nginx serves as a reverse proxy in front of ERPNext and the FastAPI service, with proper TLS certificates (e.g., via Certbot).
-- This protects against eavesdropping and man-in-the-middle attacks, especially important if users connect via public internet (e.g., a PM using the system from a client site).
+Результат сохраняется в `docs/audit/` (в репозитории приложения) и пригоден для PR‑ревью.
 
-- To mitigate brute force or denial-of-service attacks, the system employs rate limiting on the API.
-- Using a library like SlowAPI in FastAPI or Nginx’s rate limit module, it limits the number of requests per minute a single IP or user can make to sensitive endpoints.
-- This prevents abuse of the authentication endpoint or spammy bot commands from overwhelming the system.
+---
 
-### Backup & Recovery
+## 2) Health checks (интеграции и конфигурация)
 
-- A robust backup strategy is part of security (ensuring data is not lost).
-- The system performs daily database backups automatically.
-- A cron job or scheduler triggers a bench backup (or pg_dump if using PostgreSQL) every night, producing an SQL dump of the ERPNext site and including files (if any not already on Drive).
-- These backup files are then uploaded to a secure Google Drive folder dedicated to backups.
-- Only the Administrator (or certain IT staff) have access to that folder.
-- Backups are encrypted before upload or the Drive itself is restricted to the backup service account (ensuring no unauthorized access to data dumps).
-- The system retains a rotation of backups (e.g., last 7 daily backups, plus weekly and monthly snapshots).
-- In addition, since most files are already on Drive, they are inherently backed up, but any remaining private files in ERPNext (if used) are included in the backups or separately synced.
-- The system also archives log files regularly to Drive for forensic needs.
+### 2.1 Desk API: `system_health.status`
 
-### A documented Disaster Recovery plan outlines how to restore in case of catastrophic failure
+`ferum_custom.api.system_health.status` возвращает **non‑secret** статус конфигурации:
 
-- one would set up a new server, install the same version of the application from GitHub, import the latest SQL dump, and reattach the files directory (or reconnect to the Drive).
-- This procedure is tested periodically (the team might perform a test restore on a staging server) to ensure backups are valid.
-- With daily backups and cloud storage, the RPO (recovery point objective) is about 24 hours – meaning at most a day of data could be lost in a worst-case scenario, which is acceptable for this project.
+- наличие `wkhtmltopdf` (и версия)
+- конфигурация Telegram‑бота (токен/режим/ERP API ключи)
+- конфигурация FastAPI backend (base_url + auth_token)
+- конфигурация Vault (auth‑режим + `/sys/health`)
+- security validation (типовые misconfig: insecure JWT secret, VAULT_SKIP_VERIFY, права на `.env`)
+- проверка Google Drive (корень/доступ/библиотеки)
 
-- In essence, the Monitoring, Analytics, and Security processes work behind the scenes to keep Ferum Customizations reliable, informative, and safe.
-- They ensure the team can trust the system’s data and that management has the insights needed to continually improve operations.
+Доступ: только роль `System Manager`.
+
+### 2.2 FastAPI backend: `/api/v1/health`, `/metrics`
+
+В репозитории есть FastAPI backend (`ferum_custom/integrations/fastapi_backend/*`), который поддерживает:
+
+- `/api/v1/health` — healthcheck для оркестратора
+- `/metrics` — Prometheus‑метрики (`prometheus_client`)
+- Sentry SDK — если задан `SENTRY_DSN` (настройка через единый settings‑слой)
+
+Важно: наличие кода ≠ факт включения в деплое. Включение/прокидка портов — задача инфраструктуры.
+
+### 2.3 Telegram bot service: `/health`
+
+Сервис бота (`ferum_custom/integrations/telegram_bot/main.py`) имеет health‑endpoint’ы (`/health`, `/tg-bot/health`) для простого мониторинга “процесс жив”.
+
+---
+
+## 3) Аналитика (AS‑IS)
+
+Основной контур аналитики в текущей реализации — это:
+
+- Query Report’ы (Frappe/ERPNext), в т.ч. с кастомными фильтрами
+- доменные DocType (`Service Request`, `Invoice`, `ServiceAct`) как источник метрик
+
+Критический контроль качества: **любой Query Report обязан отрабатывать при пустых фильтрах** (UI всегда шлёт `{}` при первом открытии). Это проверяется runtime audit (`check_module_query_reports`).
+
+---
+
+## 4) Безопасность (контроль доступа + конфигурация)
+
+### 4.1 Контроль доступа в ERP (PQC/has_permission)
+
+Для ключевых сущностей включены scripted‑проверки:
+
+- permission query conditions: `Contract`, `File`, `Project Site`, `Service Logbook`, `Service Log Entry`
+- has_permission: `File`, `Project Site`, часть портальных сущностей (Invoice/Sales Invoice/ServiceAct)
+
+Реализация: `ferum_custom/security/*`.
+
+### 4.2 Управление секретами
+
+Секреты и интеграционные ключи читаются через единый typed‑settings слой:
+
+- `frappe.conf` → `os.environ` → Vault KV → `Ferum Custom Settings` (fallback)
+
+Это позволяет:
+
+- не хранить секреты в репозитории
+- постепенно “вырезать” секреты из DB в Vault
+- проверять конфигурацию без раскрытия секретов (через health‑summary)
+
+### 4.3 Security validation (авто‑предупреждения)
+
+`ferum_custom/config/validation.py` реализует non‑secret проверки (пример):
+
+- `.env` имеет слишком открытые права (рекомендация `chmod 600`)
+- Vault использует HTTP или `VAULT_SKIP_VERIFY`
+- JWT secret отсутствует или использует insecure default
+- отсутствует токен Telegram‑бота
+
+Эти проверки возвращаются через health‑endpoint и попадают в runtime audit.
+
+---
+
+## 5) Backup/Recovery (инфраструктурно, но с артефактами в репозитории)
+
+В репозитории присутствует пример backup‑job (`backup-job.yml`), который запускает:
+
+- `bench --site all backup`
+- опционально: `restic backup sites` + политика retention
+
+Реальный контур резервного копирования зависит от окружения (Docker Compose/k8s/VM), но минимальный критерий готовности:
+
+- ежедневные бэкапы БД (и private files, если используются)
+- тестовое восстановление в staging минимум 1 раз в квартал
