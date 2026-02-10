@@ -191,19 +191,120 @@ def check_workspaces_objects_shortcuts(*, module: str = "Ferum Custom") -> list[
 				)
 			)
 
-		for l in unique:
-			_label, url = l
+		for _label, url in unique:
 			if not url:
 				continue
-				if "/app/asset" in url or "/app/service-object" in url:
-					issues.append(
-						AuditIssue(
-							code="workspace.objects.legacy_route",
-							severity="P1",
-							message=f"Workspace 'Объекты' points to legacy route: {ws}",
-							context={"workspace": ws, "label": _label, "url": url},
-						)
+			if "/app/asset" in url or "/app/service-object" in url:
+				issues.append(
+					AuditIssue(
+						code="workspace.objects.legacy_route",
+						severity="P1",
+						message=f"Workspace 'Объекты' points to legacy route: {ws}",
+						context={"workspace": ws, "label": _label, "url": url},
 					)
+				)
+
+	return issues
+
+
+def check_project_site_truth_model() -> list[AuditIssue]:
+	issues: list[AuditIssue] = []
+
+	if not frappe.db.exists("DocType", "DocType"):
+		return issues
+
+	# Ensure the truth model doctype exists and is not a child table.
+	if frappe.db.exists("DocType", "Project Site"):
+		istable = frappe.db.get_value("DocType", "Project Site", "istable") or 0
+		if int(istable or 0) == 1:
+			issues.append(
+				AuditIssue(
+					code="project_site.truth_is_table",
+					severity="P0",
+					message="DocType `Project Site` is configured as a child table (istable=1).",
+					context={"doctype": "Project Site"},
+				)
+			)
+	else:
+		issues.append(
+			AuditIssue(
+				code="project_site.truth_missing",
+				severity="P1",
+				message="DocType `Project Site` is missing.",
+				context={"doctype": "Project Site"},
+			)
+		)
+
+	# Ensure the legacy child table exists and is correctly configured.
+	if frappe.db.exists("DocType", "Project Site Row"):
+		istable = frappe.db.get_value("DocType", "Project Site Row", "istable") or 0
+		if int(istable or 0) != 1:
+			issues.append(
+				AuditIssue(
+					code="project_site_row.not_table",
+					severity="P1",
+					message="DocType `Project Site Row` must be a child table (istable=1).",
+					context={"doctype": "Project Site Row"},
+				)
+			)
+
+	# Ensure Project.project_sites points to the legacy child doctype (if the field exists).
+	if frappe.db.exists("DocType", "Custom Field"):
+		cf = frappe.db.get_value(
+			"Custom Field",
+			{"dt": "Project", "fieldname": "project_sites"},
+			["fieldtype", "options"],
+			as_dict=True,
+		)
+		if cf and (cf.get("fieldtype") or "") == "Table":
+			expected = "Project Site Row" if frappe.db.exists("DocType", "Project Site Row") else None
+			options = str(cf.get("options") or "").strip()
+			if expected and options and options != expected:
+				issues.append(
+					AuditIssue(
+						code="project.project_sites.options_mismatch",
+						severity="P1",
+						message=f"Custom Field Project.project_sites points to `{options}`; expected `{expected}`.",
+						context={"dt": "Project", "fieldname": "project_sites", "options": options},
+					)
+				)
+
+	# Detect orphaned Service Request -> Project Site links.
+	if (
+		frappe.db.exists("DocType", "Service Request")
+		and frappe.db.has_column("Service Request", "project_site")
+		and frappe.db.exists("DocType", "Project Site")
+	):
+		try:
+			missing = frappe.db.sql(
+				"""
+				select count(*) as c
+				from `tabService Request` sr
+				left join `tabProject Site` ps on ps.name = sr.project_site
+				where ifnull(sr.project_site, '') != ''
+				  and ps.name is null
+				"""
+			)[0][0]
+			missing = int(missing or 0)
+		except Exception as exc:
+			issues.append(
+				AuditIssue(
+					code="service_request.project_site_orphan_check_failed",
+					severity="P2",
+					message="Failed to check orphaned Service Request.project_site links.",
+					context={"error": _safe_exc(exc)},
+				)
+			)
+		else:
+			if missing > 0:
+				issues.append(
+					AuditIssue(
+						code="service_request.project_site_orphans",
+						severity="P1",
+						message="Some Service Requests link to missing Project Site records.",
+						context={"missing_count": missing},
+					)
+				)
 
 	return issues
 
@@ -246,6 +347,7 @@ def run(*, write_report: int | bool = 1) -> dict[str, Any]:
 	issues += check_module_query_reports()
 	issues += check_workflows()
 	issues += check_workspaces_objects_shortcuts()
+	issues += check_project_site_truth_model()
 	health, health_issues = check_system_health()
 	issues += health_issues
 

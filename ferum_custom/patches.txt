@@ -60,3 +60,4 @@ ferum_custom.patches.v15_9.disable_broken_reports
 ferum_custom.patches.v15_9.disable_legacy_service_object_mutations
 ferum_custom.patches.v15_9.add_rusakov_to_all_projects
 ferum_custom.patches.v15_10.migrate_project_site_row_to_truth
+ferum_custom.patches.v15_10.repair_project_site_truth_names

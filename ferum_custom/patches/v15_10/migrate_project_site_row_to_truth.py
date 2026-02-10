@@ -84,12 +84,32 @@ def execute() -> None:
 	created = 0
 	updated = 0
 	missing_contract = 0
+	renamed = 0
 
 	for r in rows:
 		row_name = str(r.get("name") or "").strip()
 		project = str(r.get("parent") or "").strip()
 		if not row_name:
 			continue
+
+		legacy_key = f"project_site_row:{row_name}"
+		if not frappe.db.exists(TRUTH_DT, row_name):
+			# Backward-compatible repair:
+			# earlier versions of this patch created truth records with naming series (PS-00001)
+			# because `DocType Project Site` uses autoname; those records are tracked by `legacy_key`.
+			existing = frappe.db.get_value(TRUTH_DT, {"legacy_key": legacy_key}, "name")
+			existing = str(existing or "").strip() or None
+			if existing and existing != row_name:
+				try:
+					frappe.rename_doc(TRUTH_DT, existing, row_name, force=True, ignore_permissions=True)
+					renamed += 1
+				except Exception:
+					frappe.log_error(
+						frappe.get_traceback(),
+						"Rename Project Site to legacy row name failed",
+					)
+					continue
+
 		if frappe.db.exists(TRUTH_DT, row_name):
 			# Best-effort: backfill missing fields without overriding user changes.
 			updates: dict[str, object] = {}
@@ -125,7 +145,7 @@ def execute() -> None:
 			"drive_folder_id": drive_id,
 			"default_engineer": str(r.get("default_engineer") or "").strip() or None,
 			"notes": str(r.get("notes") or "").strip() or None,
-			"legacy_key": f"project_site_row:{row_name}",
+			"legacy_key": legacy_key,
 		}
 
 		# If contract is missing, still create a placeholder row to preserve link integrity.
@@ -140,7 +160,14 @@ def execute() -> None:
 
 		try:
 			doc = frappe.get_doc(doc_dict)
-			doc.insert(ignore_permissions=True, ignore_mandatory=ignore_mandatory)
+			# Preserve legacy row `name` for backward compatibility:
+			# - Service Request.project_site historically linked to child-row names
+			# - DocType `Project Site` uses naming series by default, so we must use `set_name=...`
+			doc.insert(
+				ignore_permissions=True,
+				ignore_mandatory=ignore_mandatory,
+				set_name=row_name,
+			)
 			created += 1
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "Migrate Project Site Row -> Project Site failed")
@@ -151,5 +178,5 @@ def execute() -> None:
 
 	frappe.log_error(
 		title="Ferum: migrate_project_site_row_to_truth",
-		message=f"created={created} updated={updated} missing_contract={missing_contract}",
+		message=f"created={created} updated={updated} renamed={renamed} missing_contract={missing_contract}",
 	)

@@ -19,6 +19,7 @@ from ferum_custom.integrations.google_drive_folders import (
 	update_drive_file,
 	upsert_json_file,
 )
+from ferum_custom.utils import project_sites
 
 _FOLDER_MIME = "application/vnd.google-apps.folder"
 
@@ -313,7 +314,8 @@ def ensure_drive_folders(project: str) -> dict:
 
 	Stores folder links in:
 	- Project.drive_folder_url
-	- Project Site.drive_folder_url (child rows), if the field exists
+	- Project Site.drive_folder_url (truth model), if the field exists
+	- Project Site Row.drive_folder_url (legacy Project child rows), if the field exists
 
 	Requires a configured service account key + root folder id.
 	"""
@@ -415,16 +417,57 @@ def ensure_drive_folders(project: str) -> dict:
 		frappe.db.set_value("Project", project, "drive_folder_url", project_folder_url, update_modified=True)
 
 	# Create folders for each Project Site.
+	truth_dt = project_sites.truth_doctype()
+	row_dt = project_sites.legacy_row_doctype()
+
+	use_truth = (
+		project_sites.is_truth_enabled()
+		and frappe.db.exists("DocType", truth_dt)
+		and frappe.db.has_column(truth_dt, "project")
+	)
+	site_rows: list[dict] = []
+	if use_truth:
+		site_rows = frappe.get_all(
+			truth_dt,
+			filters={"project": project},
+			fields=[
+				"name",
+				"site_name",
+				"address",
+				"drive_folder_url",
+				"default_engineer",
+				"notes",
+				"modified",
+			],
+			limit_page_length=200000,
+			order_by="modified desc",
+		)
+
+	# Backward-compatible fallback: if no truth records yet, use legacy Project child table.
+	if not site_rows:
+		for row in doc.get("project_sites") or []:
+			site_rows.append(
+				{
+					"name": str(getattr(row, "name", "") or "").strip(),
+					"site_name": str(getattr(row, "site_name", "") or "").strip(),
+					"address": str(getattr(row, "address", "") or "").strip(),
+					"drive_folder_url": str(getattr(row, "drive_folder_url", "") or "").strip(),
+					"default_engineer": str(getattr(row, "default_engineer", "") or "").strip(),
+					"notes": str(getattr(row, "notes", "") or "").strip(),
+					"idx": getattr(row, "idx", 0),
+				}
+			)
+
 	site_results: list[dict] = []
-	for row in doc.get("project_sites") or []:
-		row_name = str(getattr(row, "name", "") or "").strip()
-		site_name = str(getattr(row, "site_name", "") or "").strip()
-		site_address = str(getattr(row, "address", "") or "").strip()
-		default_engineer = str(getattr(row, "default_engineer", "") or "").strip()
-		notes = str(getattr(row, "notes", "") or "").strip()
+	for row in site_rows:
+		row_name = str(row.get("name") or "").strip()
+		site_name = str(row.get("site_name") or "").strip()
+		site_address = str(row.get("address") or "").strip()
+		default_engineer = str(row.get("default_engineer") or "").strip()
+		notes = str(row.get("notes") or "").strip()
 
 		try:
-			site_idx = int(getattr(row, "idx", 0) or 0)
+			site_idx = int(row.get("idx") or 0)
 		except Exception:
 			site_idx = 0
 
@@ -433,7 +476,9 @@ def ensure_drive_folders(project: str) -> dict:
 		try:
 			# Site folder name is stable (child row ID), not user input.
 			desired_site_name = _safe_folder_component(row_name)
-			existing_site_id = _drive_folder_id_from_url(getattr(row, "drive_folder_url", None))
+			existing_site_id = _drive_folder_id_from_url(
+				str(row.get("drive_folder_url") or "").strip() or None
+			)
 
 			if existing_site_id:
 				info = None
@@ -509,10 +554,21 @@ def ensure_drive_folders(project: str) -> dict:
 			frappe.log_error(title="Ferum: Google Drive folders", message=frappe.get_traceback())
 			frappe.throw(_friendly_drive_error(exc))
 		site_results.append({"row": row_name, "site_name": site_name, "url": folder.web_view_link})
-		# Update child row without saving the whole Project doc.
-		if frappe.db.has_column("Project Site", "drive_folder_url"):
+		# Update truth Project Site without saving any parent doc.
+		if frappe.db.exists("DocType", truth_dt) and frappe.db.has_column(truth_dt, "drive_folder_url"):
+			updates: dict[str, object] = {"drive_folder_url": folder.web_view_link}
+			if frappe.db.has_column(truth_dt, "drive_folder_id"):
+				updates["drive_folder_id"] = folder.id
 			frappe.db.set_value(
-				"Project Site", row_name, "drive_folder_url", folder.web_view_link, update_modified=False
+				truth_dt,
+				row_name,
+				updates,
+				update_modified=False,
+			)
+		# Best-effort: keep legacy row in sync if it exists (pre-truth or during migration).
+		if row_dt and frappe.db.exists(row_dt, row_name) and frappe.db.has_column(row_dt, "drive_folder_url"):
+			frappe.db.set_value(
+				row_dt, row_name, "drive_folder_url", folder.web_view_link, update_modified=False
 			)
 
 	# Best-effort: keep project metadata snapshot inside Drive.
