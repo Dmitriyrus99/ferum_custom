@@ -1,0 +1,52 @@
+ferum_custom/api/telegram_bot.py:277:	for fn in ["project_name", "customer", "project_manager", "ferum_stage", "status", "company"]:
+ferum_custom/api/telegram_bot.py:666:	if project_meta.has_field("ferum_stage"):
+ferum_custom/api/telegram_bot.py:667:		payload["ferum_stage"] = frappe.db.get_value("Project", active, "ferum_stage")
+ferum_custom/ferum_custom/doctype/service_request/test_service_request.py:61:		if hasattr(project, "ferum_p0_enabled"):
+ferum_custom/ferum_custom/doctype/service_request/test_service_request.py:62:			project.ferum_p0_enabled = 0
+ferum_custom/ferum_custom/tests/test_telegram_project_access.py:57:		if hasattr(project, "ferum_p0_enabled"):
+ferum_custom/ferum_custom/tests/test_telegram_project_access.py:58:			project.ferum_p0_enabled = 0
+ferum_custom/hooks.py:155:			"ferum_custom.services.project_full_cycle.validate_project_p0_stage_gates",
+ferum_custom/hooks.py:157:		"after_insert": "ferum_custom.services.project_full_cycle.create_initial_project_todos",
+ferum_custom/hooks.py:190:		"ferum_custom.services.project_escalations.run_daily_project_escalations",
+ferum_custom/patches.txt:29:ferum_custom.patches.v15_9.add_project_full_cycle_p0
+ferum_custom/patches.txt:31:ferum_custom.patches.v15_9.add_project_full_cycle_p0_extras
+ferum_custom/patches/v15_9/add_project_client_script_p0.py:15:    if (!frm.doc || !frm.doc.ferum_stage) return;
+ferum_custom/patches/v15_9/add_project_full_cycle_p0.py:42:			"fieldname": "ferum_stage",
+ferum_custom/patches/v15_9/add_project_full_cycle_p0.py:430:	if _field_exists("Project", "ferum_stage"):
+ferum_custom/patches/v15_9/add_project_full_cycle_p0.py:54:			"insert_after": "ferum_stage",
+ferum_custom/patches/v15_9/add_project_p0_enabled_flag.py:28:	if not _field_exists("Project", "ferum_p0_enabled"):
+ferum_custom/patches/v15_9/add_project_p0_enabled_flag.py:33:						"fieldname": "ferum_p0_enabled",
+ferum_custom/patches/v15_9/add_project_p0_enabled_flag.py:37:						"insert_after": "ferum_stage",
+ferum_custom/patches/v15_9/add_project_p0_enabled_flag.py:45:	cf_name = frappe.db.get_value("Custom Field", {"dt": "Project", "fieldname": "ferum_p0_enabled"}, "name")
+ferum_custom/patches/v15_9/add_project_project_manager_field.py:37:						"insert_after": "ferum_stage",
+ferum_custom/patches/v15_9/add_project_workflow_p0.py:110:	if not frappe.get_meta("Project").has_field("ferum_stage"):
+ferum_custom/patches/v15_9/add_project_workflow_p0.py:20:	# The field itself is created by add_project_full_cycle_p0 patch. If it doesn't exist, skip.
+ferum_custom/patches/v15_9/add_project_workflow_p0.py:24:	if not meta.has_field("ferum_stage"):
+ferum_custom/patches/v15_9/add_project_workflow_p0.py:38:	doc.workflow_state_field = "ferum_stage"
+ferum_custom/patches/v15_9/add_project_workflow_p0.py:71:					"update_field": "ferum_stage",
+ferum_custom/patches/v15_9/disable_p0_for_incomplete_projects.py:15:	if not (meta.has_field("ferum_p0_enabled") and meta.has_field("ferum_stage")):
+ferum_custom/patches/v15_9/disable_p0_for_incomplete_projects.py:39:		set ferum_p0_enabled = 0
+ferum_custom/patches/v15_9/disable_p0_for_incomplete_projects.py:40:		where ifnull(ferum_p0_enabled, 0) = 1
+ferum_custom/patches/v15_9/update_project_p0_custom_field_labels_ru.py:18:		"ferum_stage": "Этап (Ferum)",
+ferum_custom/patches/v15_9/update_project_workflow_p0_roles.py:25:	if not frappe.get_meta("Project").has_field("ferum_stage"):
+ferum_custom/patches/v15_9/update_project_workflow_p0_roles.py:31:	doc.workflow_state_field = "ferum_stage"
+ferum_custom/patches/v15_9/update_project_workflow_p0_roles.py:74:						"update_field": "ferum_stage",
+ferum_custom/services/project_escalations.py:59:def run_daily_project_escalations() -> None:
+ferum_custom/services/project_escalations.py:61:	if not frappe.db.exists("DocType", "Project") or not frappe.get_meta("Project").has_field("ferum_stage"):
+ferum_custom/services/project_escalations.py:67:	if project_meta.has_field("ferum_p0_enabled"):
+ferum_custom/services/project_escalations.py:68:		filters["ferum_p0_enabled"] = 1
+ferum_custom/services/project_escalations.py:69:	fields = ["name", "ferum_stage"]
+ferum_custom/services/project_escalations.py:93:		stage = r.get("ferum_stage")
+ferum_custom/services/project_escalations.py:9:from .project_full_cycle import _stage_index, maybe_trigger_customer_ignored_mail_task
+ferum_custom/services/project_full_cycle.py:105:def validate_project_p0_stage_gates(doc: Document, method: str | None = None) -> None:
+ferum_custom/services/project_full_cycle.py:107:	if not getattr(doc, "ferum_stage", None):
+ferum_custom/services/project_full_cycle.py:109:	if int(getattr(doc, "ferum_p0_enabled", 0) or 0) != 1:
+ferum_custom/services/project_full_cycle.py:117:	stage = getattr(doc, "ferum_stage", None)
+ferum_custom/services/project_full_cycle.py:305:	if not getattr(doc, "ferum_stage", None):
+ferum_custom/services/project_full_cycle.py:309:	current_stage = getattr(doc, "ferum_stage", None)
+ferum_custom/services/project_full_cycle.py:316:		doc.ferum_stage = "Initial Document Package Sent"
+ferum_custom/services/project_full_cycle.py:329:	if not getattr(doc, "ferum_stage", None):
+ferum_custom/services/project_full_cycle.py:331:	if not _at_least(getattr(doc, "ferum_stage", None), "Act & Defects Sent"):
+ferum_custom/services/project_full_cycle.py:355:	if not getattr(doc, "ferum_stage", None):
+ferum_custom/services/project_full_cycle.py:357:	if int(getattr(doc, "ferum_p0_enabled", 0) or 0) != 1:
+ferum_custom/services/project_full_cycle.py:87:	if not getattr(doc, "ferum_stage", None):

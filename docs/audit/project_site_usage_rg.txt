@@ -1,0 +1,86 @@
+ferum_custom/api/project_drive.py:316:	- Project Site.drive_folder_url (child rows), if the field exists
+ferum_custom/api/project_drive.py:417:	# Create folders for each Project Site.
+ferum_custom/api/project_drive.py:419:	for row in doc.get("project_sites") or []:
+ferum_custom/api/project_drive.py:488:					"project_site": {
+ferum_custom/api/project_drive.py:513:		if frappe.db.has_column("Project Site", "drive_folder_url"):
+ferum_custom/api/project_drive.py:515:				"Project Site", row_name, "drive_folder_url", folder.web_view_link, update_modified=False
+ferum_custom/api/service.py:101:	project_site: str | None = None,
+ferum_custom/api/service.py:129:	project_site = (project_site or "").strip()
+ferum_custom/api/service.py:130:	if project_site:
+ferum_custom/api/service.py:131:		doc.project_site = project_site
+ferum_custom/api/service.py:17:	return "Project Site"
+ferum_custom/api/service.py:87:			"project_site",
+ferum_custom/api/telegram_bot.py:1003:	if not frappe.db.exists(_project_site_dt(), project_site):
+ferum_custom/api/telegram_bot.py:1004:		frappe.throw(_("Project Site not found."))
+ferum_custom/api/telegram_bot.py:1005:	site_parent = frappe.db.get_value(_project_site_dt(), project_site, "parent")
+ferum_custom/api/telegram_bot.py:1007:		frappe.throw(_("Project Site does not belong to selected Project."))
+ferum_custom/api/telegram_bot.py:1021:	site_folder_url = frappe.db.get_value(_project_site_dt(), project_site, "drive_folder_url")
+ferum_custom/api/telegram_bot.py:1127:			"project_site": project_site,
+ferum_custom/api/telegram_bot.py:1164:	if meta.has_field("project_site") and frappe.db.has_column(meta.name, "project_site"):
+ferum_custom/api/telegram_bot.py:1165:		site = (getattr(doc, "project_site", None) or "").strip() or None
+ferum_custom/api/telegram_bot.py:1167:		# Legacy: Service Object id (not Project Site)
+ferum_custom/api/telegram_bot.py:118:	return "Project Site"
+ferum_custom/api/telegram_bot.py:1228:		"project_site": site,
+ferum_custom/api/telegram_bot.py:1274:		frappe.throw(_("Service Request does not have a valid Project Site."))
+ferum_custom/api/telegram_bot.py:1342:			"project_site": site,
+ferum_custom/api/telegram_bot.py:315:	# Engineer access via Project Site.default_engineer
+ferum_custom/api/telegram_bot.py:755:			"project_site",
+ferum_custom/api/telegram_bot.py:769:	project_site: str | None = None,
+ferum_custom/api/telegram_bot.py:770:	service_object: str | None = None,  # backward compatible: treat as project_site
+ferum_custom/api/telegram_bot.py:783:	site = (project_site or service_object or "").strip()
+ferum_custom/api/telegram_bot.py:785:		frappe.throw(_("Missing project_site."))
+ferum_custom/api/telegram_bot.py:788:		frappe.throw(_("Project Site not found."))
+ferum_custom/api/telegram_bot.py:791:		frappe.throw(_("Project Site does not belong to selected Project."))
+ferum_custom/api/telegram_bot.py:815:		if meta.has_field("project_site"):
+ferum_custom/api/telegram_bot.py:816:			values["project_site"] = site
+ferum_custom/api/telegram_bot.py:829:		"project_site": site,
+ferum_custom/api/telegram_bot.py:973:	project_site: str,
+ferum_custom/api/telegram_bot.py:988:	project_site = (project_site or "").strip()
+ferum_custom/api/telegram_bot.py:995:	if not project_site:
+ferum_custom/api/telegram_bot.py:996:		frappe.throw(_("Missing project_site."))
+ferum_custom/ferum_custom/doctype/project_site/project_site.json:53:  "name": "Project Site",
+ferum_custom/ferum_custom/doctype/service_request/service_request.json:124:   "fieldname": "project_site",
+ferum_custom/ferum_custom/doctype/service_request/service_request.json:127:   "options": "Project Site"
+ferum_custom/ferum_custom/doctype/service_request/service_request.json:20:  "project_site",
+ferum_custom/ferum_custom/doctype/service_request/service_request.py:60:		if not self.meta.has_field("project_site"):
+ferum_custom/ferum_custom/doctype/service_request/service_request.py:62:		project_site = str(getattr(self, "project_site", None) or "").strip()
+ferum_custom/ferum_custom/doctype/service_request/service_request.py:63:		if not project_site:
+ferum_custom/ferum_custom/doctype/service_request/service_request.py:65:		if not frappe.db.exists("Project Site", project_site):
+ferum_custom/ferum_custom/doctype/service_request/service_request.py:66:			frappe.throw(_("Project Site not found: {0}.").format(frappe.bold(project_site)))
+ferum_custom/ferum_custom/doctype/service_request/service_request.py:68:		parent = frappe.db.get_value("Project Site", project_site, "parent")
+ferum_custom/ferum_custom/doctype/service_request/service_request.py:73:				_("Project Site {0} does not belong to Project {1}.").format(
+ferum_custom/ferum_custom/doctype/service_request/service_request.py:74:					frappe.bold(project_site), frappe.bold(erp_project)
+ferum_custom/ferum_custom/doctype/service_request/service_request.py:79:		# New model: Service Request -> ERPNext Project + Project Site.
+ferum_custom/ferum_custom/doctype/service_request/test_service_request.py:108:				"project_site": ps_b.name,
+ferum_custom/ferum_custom/doctype/service_request/test_service_request.py:17:	"Project Site",
+ferum_custom/ferum_custom/doctype/service_request/test_service_request.py:69:				"doctype": "Project Site",
+ferum_custom/ferum_custom/doctype/service_request/test_service_request.py:72:				"parentfield": "project_sites",
+ferum_custom/ferum_custom/doctype/service_request/test_service_request.py:90:				"project_site": ps.name,
+ferum_custom/ferum_custom/report/project_sites/project_sites.py:27:		"ps.parentfield = 'project_sites'",
+ferum_custom/integrations/telegram_bot/handlers/commands.py:1558:					"project_site": obj,
+ferum_custom/integrations/telegram_bot/handlers/commands.py:1597:					"project_site": obj,
+ferum_custom/notifications.py:177:	# New model: ERPNext Project + Project Site
+ferum_custom/notifications.py:181:	project_site = getattr(doc, "project_site", None)
+ferum_custom/notifications.py:186:		project_site
+ferum_custom/notifications.py:187:		and frappe.db.exists("DocType", "Project Site")
+ferum_custom/notifications.py:188:		and frappe.db.exists("Project Site", project_site)
+ferum_custom/notifications.py:191:			"Project Site",
+ferum_custom/notifications.py:192:			project_site,
+ferum_custom/patches/v15_9/add_project_full_cycle_p0.py:124:			"fieldname": "project_sites",
+ferum_custom/patches/v15_9/add_project_full_cycle_p0.py:127:			"options": "Project Site",
+ferum_custom/patches/v15_9/add_project_full_cycle_p0.py:134:			"insert_after": "project_sites",
+ferum_custom/patches/v15_9/add_project_full_cycle_p0.py:422:		"Project Site",
+ferum_custom/patches/v15_9/add_project_telegram_users_field.py:31:			"insert_after": "project_sites",
+ferum_custom/patches/v15_9/backfill_project_sites_from_service_objects.py:18:			"doctype": "Project Site",
+ferum_custom/patches/v15_9/backfill_project_sites_from_service_objects.py:21:			"parentfield": "project_sites",
+ferum_custom/patches/v15_9/backfill_project_sites_from_service_objects.py:43:	if not frappe.db.exists("DocType", "Project Site"):
+ferum_custom/patches/v15_9/backfill_project_sites_from_service_objects.py:45:	if not frappe.get_meta("Project").has_field("project_sites"):
+ferum_custom/patches/v15_9/backfill_project_sites_from_service_objects.py:61:		# Skip if already has at least 1 Project Site.
+ferum_custom/patches/v15_9/backfill_project_sites_from_service_objects.py:62:		if frappe.get_all("Project Site", filters={"parenttype": "Project", "parent": project_name}, limit=1):
+ferum_custom/patches/v15_9/update_project_p0_custom_field_labels_ru.py:31:		"project_sites": "Объекты",
+ferum_custom/security/project_access.py:158:	if frappe.db.exists("DocType", "Project Site") and frappe.db.has_column(
+ferum_custom/security/project_access.py:159:		"Project Site", "default_engineer"
+ferum_custom/security/project_access.py:45:	- Project Site.default_engineer == user
+ferum_custom/security/project_access.py:82:	# Engineer access via Project Site.default_engineer
+ferum_custom/security/project_access.py:83:	if frappe.db.exists("DocType", "Project Site") and frappe.db.has_column(
+ferum_custom/security/project_access.py:84:		"Project Site", "default_engineer"

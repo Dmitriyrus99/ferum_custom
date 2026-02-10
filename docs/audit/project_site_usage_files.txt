@@ -1,0 +1,15 @@
+ferum_custom/api/project_drive.py
+ferum_custom/api/service.py
+ferum_custom/api/telegram_bot.py
+ferum_custom/ferum_custom/doctype/project_site/project_site.json
+ferum_custom/ferum_custom/doctype/service_request/service_request.json
+ferum_custom/ferum_custom/doctype/service_request/service_request.py
+ferum_custom/ferum_custom/doctype/service_request/test_service_request.py
+ferum_custom/ferum_custom/report/project_sites/project_sites.py
+ferum_custom/integrations/telegram_bot/handlers/commands.py
+ferum_custom/notifications.py
+ferum_custom/patches/v15_9/add_project_full_cycle_p0.py
+ferum_custom/patches/v15_9/add_project_telegram_users_field.py
+ferum_custom/patches/v15_9/backfill_project_sites_from_service_objects.py
+ferum_custom/patches/v15_9/update_project_p0_custom_field_labels_ru.py
+ferum_custom/security/project_access.py
