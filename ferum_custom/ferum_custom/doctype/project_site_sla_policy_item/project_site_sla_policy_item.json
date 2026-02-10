@@ -1,0 +1,89 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2026-02-10 00:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "request_type",
+    "priority",
+    "reaction_hours",
+    "resolve_hours",
+    "work_window",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "request_type",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Тип заявки",
+      "reqd": 1
+    },
+    {
+      "fieldname": "priority",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Приоритет",
+      "options": "Low\nMedium\nHigh",
+      "default": "Medium"
+    },
+    {
+      "fieldname": "reaction_hours",
+      "fieldtype": "Float",
+      "in_list_view": 1,
+      "label": "Реакция (ч)"
+    },
+    {
+      "fieldname": "resolve_hours",
+      "fieldtype": "Float",
+      "in_list_view": 1,
+      "label": "Решение (ч)"
+    },
+    {
+      "fieldname": "work_window",
+      "fieldtype": "Small Text",
+      "label": "Окно работ"
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "Примечание"
+    }
+  ],
+  "istable": 1,
+  "links": [],
+  "modified": "2026-02-10 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Ferum Custom",
+  "name": "Project Site SLA Policy Item",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "System Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "Project Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "Office Manager",
+      "write": 1
+    }
+  ],
+  "row_format": "Dynamic",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

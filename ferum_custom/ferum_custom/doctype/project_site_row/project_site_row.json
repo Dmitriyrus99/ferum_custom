@@ -1,0 +1,82 @@
+{
+  "actions": [],
+  "allow_rename": 1,
+  "creation": "2025-12-25 00:00:00.000000",
+  "doctype": "DocType",
+  "editable_grid": 1,
+  "engine": "InnoDB",
+  "field_order": [
+    "site_name",
+    "address",
+    "drive_folder_url",
+    "default_engineer",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "site_name",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Объект",
+      "reqd": 1
+    },
+    {
+      "fieldname": "address",
+      "fieldtype": "Small Text",
+      "in_list_view": 1,
+      "label": "Адрес",
+      "reqd": 1
+    },
+    {
+      "fieldname": "drive_folder_url",
+      "fieldtype": "Data",
+      "label": "Папка Google Drive"
+    },
+    {
+      "fieldname": "default_engineer",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Инженер",
+      "options": "User"
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "Примечание"
+    }
+  ],
+  "istable": 1,
+  "links": [],
+  "modified": "2025-12-25 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Ferum Custom",
+  "name": "Project Site Row",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "System Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "Project Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "Office Manager",
+      "write": 1
+    }
+  ],
+  "row_format": "Dynamic",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": []
+}

@@ -4,6 +4,19 @@ import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
+def _project_sites_child_doctype() -> str:
+	"""Return the legacy child doctype used by Project.project_sites (Table)."""
+	if frappe.db.exists("DocType", "Project Site Row"):
+		return "Project Site Row"
+	try:
+		dt = frappe.get_doc("DocType", "Project Site")
+		if int(getattr(dt, "istable", 0) or 0) == 1:
+			return "Project Site"
+	except Exception:
+		pass
+	return "Project Site Row"
+
+
 def _field_exists(doctype: str, fieldname: str) -> bool:
 	return bool(
 		frappe.db.get_value(
@@ -124,7 +137,7 @@ def _create_project_fields() -> None:
 			"fieldname": "project_sites",
 			"label": "Project Sites",
 			"fieldtype": "Table",
-			"options": "Project Site",
+			"options": _project_sites_child_doctype(),
 			"insert_after": "project_sites_section",
 		},
 		{
@@ -419,7 +432,7 @@ def execute() -> None:
 		"Project Outbound Mail Item",
 		"Project Survey Checklist Item",
 		"Project Billing Period",
-		"Project Site",
+		_project_sites_child_doctype(),
 	]
 	for dt in required_table_dts:
 		if not frappe.db.exists("DocType", dt):

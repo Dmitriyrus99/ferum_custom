@@ -6,15 +6,12 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
+from ferum_custom.utils import project_sites
+
 
 def _require_authenticated() -> None:
 	if frappe.session.user == "Guest":
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
-
-
-def _project_site_dt() -> str:
-	# Child table used by Ferum Project model.
-	return "Project Site"
 
 
 @frappe.whitelist()
@@ -39,23 +36,16 @@ def list_objects(project: str | None = None, limit: int = 500, **kwargs: Any) ->
 	limit = max(1, min(cint(limit) or 500, 1000))
 
 	out: list[dict] = []
-	if frappe.db.exists("DocType", _project_site_dt()):
-		rows = frappe.get_all(
-			_project_site_dt(),
-			filters={"parenttype": "Project", "parent": project},
-			fields=["name", "site_name", "address", "default_engineer", "idx"],
-			limit=limit,
-			order_by="idx asc",
+	rows = project_sites.list_sites_for_project(project=project, limit=limit)
+	for r in rows:
+		out.append(
+			{
+				"name": r.get("name"),
+				"object_name": r.get("site_name"),
+				"address": r.get("address"),
+				"default_engineer": r.get("default_engineer"),
+			}
 		)
-		for r in rows:
-			out.append(
-				{
-					"name": r.get("name"),
-					"object_name": r.get("site_name"),
-					"address": r.get("address"),
-					"default_engineer": r.get("default_engineer"),
-				}
-			)
 
 	return {"ok": True, "count": len(out), "items": out}
 

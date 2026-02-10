@@ -4,6 +4,7 @@ from frappe.utils import cint, get_url_to_form
 
 from ferum_custom.config.settings import get_settings
 from ferum_custom.config.types import parse_int
+from ferum_custom.utils import project_sites
 
 REQUEST_TIMEOUT_SECONDS = 20
 
@@ -182,18 +183,31 @@ def _service_request_context(doc) -> dict:
 	object_name = None
 	address = None
 	site_engineer = None
-	if (
-		project_site
-		and frappe.db.exists("DocType", "Project Site")
-		and frappe.db.exists("Project Site", project_site)
-	):
-		object_name, address, site_engineer, project_from_site = frappe.db.get_value(
-			"Project Site",
-			project_site,
-			["site_name", "address", "default_engineer", "parent"],
-		)
-		project = project or project_from_site
-		project_type = "Project"
+	if project_site:
+		project_site = str(project_site or "").strip()
+		truth_dt = project_sites.truth_doctype()
+		row_dt = project_sites.legacy_row_doctype()
+
+		project_from_site = None
+		if frappe.db.exists("DocType", truth_dt) and frappe.db.exists(truth_dt, project_site):
+			fields = ["site_name", "address", "default_engineer"]
+			if frappe.db.has_column(truth_dt, "project"):
+				fields.append("project")
+			object_name, address, site_engineer, project_from_site = frappe.db.get_value(
+				truth_dt,
+				project_site,
+				fields,
+			)
+		elif row_dt and frappe.db.exists("DocType", row_dt) and frappe.db.exists(row_dt, project_site):
+			object_name, address, site_engineer, project_from_site = frappe.db.get_value(
+				row_dt,
+				project_site,
+				["site_name", "address", "default_engineer", "parent"],
+			)
+
+		if project_from_site:
+			project = project or project_from_site
+			project_type = "Project"
 
 	# Legacy fallback: Service Object / Service Project
 	so_dt = _service_object_dt()

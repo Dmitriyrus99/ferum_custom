@@ -1,0 +1,143 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "SLE-.#####",
+  "creation": "2026-02-10 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "logbook",
+    "project_site",
+    "service_request",
+    "entry_type",
+    "performed_at",
+    "summary",
+    "paper_reference",
+    "signed_by_customer",
+    "signed_at",
+    "signer_name",
+    "created_via"
+  ],
+  "fields": [
+    {
+      "fieldname": "logbook",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Журнал",
+      "options": "Service Logbook",
+      "reqd": 1
+    },
+    {
+      "fetch_from": "logbook.project_site",
+      "fieldname": "project_site",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Объект (Project Site)",
+      "options": "Project Site",
+      "read_only": 1
+    },
+    {
+      "fieldname": "service_request",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Заявка",
+      "options": "Service Request"
+    },
+    {
+      "default": "Other",
+      "fieldname": "entry_type",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Тип",
+      "options": "Planned TO\nPPR\nEmergency\nInspection\nOther",
+      "reqd": 1
+    },
+    {
+      "fieldname": "performed_at",
+      "fieldtype": "Datetime",
+      "in_list_view": 1,
+      "label": "Когда выполнено",
+      "reqd": 1
+    },
+    {
+      "fieldname": "summary",
+      "fieldtype": "Small Text",
+      "label": "Кратко",
+      "reqd": 1
+    },
+    {
+      "fieldname": "paper_reference",
+      "fieldtype": "Data",
+      "label": "Ссылка на бумажный журнал"
+    },
+    {
+      "fieldname": "signed_by_customer",
+      "fieldtype": "Check",
+      "label": "Подписано заказчиком"
+    },
+    {
+      "depends_on": "eval:doc.signed_by_customer==1",
+      "fieldname": "signed_at",
+      "fieldtype": "Datetime",
+      "label": "Дата подписи"
+    },
+    {
+      "depends_on": "eval:doc.signed_by_customer==1",
+      "fieldname": "signer_name",
+      "fieldtype": "Data",
+      "label": "Кто подписал"
+    },
+    {
+      "default": "ERP",
+      "fieldname": "created_via",
+      "fieldtype": "Select",
+      "label": "Источник",
+      "options": "ERP\nBot\nMigration"
+    }
+  ],
+  "idx": 0,
+  "links": [],
+  "modified": "2026-02-10 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Ferum Custom",
+  "name": "Service Log Entry",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "System Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "Project Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "Office Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "read": 1,
+      "role": "Service Engineer",
+      "write": 1
+    },
+    {
+      "read": 1,
+      "role": "Client"
+    }
+  ],
+  "row_format": "Dynamic",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

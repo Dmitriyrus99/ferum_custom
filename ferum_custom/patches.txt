@@ -2,6 +2,8 @@
 # Patches added in this section will be executed before doctypes are migrated
 # Read docs to understand patches: https://frappeframework.com/docs/v14/user/en/database-migrations
 
+ferum_custom.patches.v15_10.rename_legacy_project_site_doctype
+
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 ferum_custom.patches.v15_7.add_contract_project_objects_acts_model
@@ -57,3 +59,4 @@ ferum_custom.patches.v15_9.ensure_file_home_folder
 ferum_custom.patches.v15_9.disable_broken_reports
 ferum_custom.patches.v15_9.disable_legacy_service_object_mutations
 ferum_custom.patches.v15_9.add_rusakov_to_all_projects
+ferum_custom.patches.v15_10.migrate_project_site_row_to_truth

@@ -13,6 +13,7 @@ from frappe import _
 from frappe.utils import add_to_date, cint, get_url, now_datetime, validate_email_address
 
 from ferum_custom.config.settings import get_settings
+from ferum_custom.utils import project_sites
 
 
 def _telegram_bot_token() -> str | None:
@@ -115,7 +116,7 @@ def _project_meta():
 
 
 def _project_site_dt() -> str:
-	return "Project Site"
+	return project_sites.truth_doctype()
 
 
 def _normalize_email(raw: str | None) -> str:
@@ -313,20 +314,40 @@ def _projects_for_link(link: LinkedTelegramUser) -> list[dict]:
 			)
 
 	# Engineer access via Project Site.default_engineer
-	if frappe.db.exists("DocType", _project_site_dt()) and frappe.db.has_column(
-		_project_site_dt(), "default_engineer"
+	truth_dt = project_sites.truth_doctype()
+	if (
+		frappe.db.exists("DocType", truth_dt)
+		and frappe.db.has_column(truth_dt, "default_engineer")
+		and frappe.db.has_column(truth_dt, "project")
 	):
-		rows = frappe.db.sql(
-			"""
-			select distinct parent
-			from `tabProject Site`
-			where parenttype = 'Project'
-			  and ifnull(default_engineer,'') = %(user)s
-			limit 500
-			""",
-			{"user": link.user},
+		projects.update(
+			{
+				str(p)
+				for p in frappe.get_all(
+					truth_dt, filters={"default_engineer": link.user}, pluck="project", limit=500
+				)
+				if p
+			}
 		)
-		projects.update({str(r[0]) for r in rows if r and r[0]})
+
+	row_dt = project_sites.legacy_row_doctype()
+	if row_dt and frappe.db.exists("DocType", row_dt) and frappe.db.has_column(row_dt, "default_engineer"):
+		projects.update(
+			{
+				str(p)
+				for p in frappe.get_all(
+					row_dt,
+					filters={
+						"parenttype": "Project",
+						"parentfield": "project_sites",
+						"default_engineer": link.user,
+					},
+					pluck="parent",
+					limit=500,
+				)
+				if p
+			}
+		)
 
 	# Explicit subscriptions (telegram_users child table)
 	rows = frappe.get_all(
@@ -693,19 +714,9 @@ def list_objects(chat_id: int, project: str) -> list[dict]:
 	_require_system_manager()
 	link = _resolve_link(chat_id)
 	_assert_project_access(link, project)
-	if not frappe.db.exists("DocType", _project_site_dt()):
-		return []
 	engineer_only = _is_engineer_scoped_user(link.user)
-	rows = frappe.get_all(
-		_project_site_dt(),
-		filters={
-			"parenttype": "Project",
-			"parent": project,
-			**({"default_engineer": link.user} if engineer_only else {}),
-		},
-		fields=["name", "site_name", "address", "default_engineer", "idx"],
-		limit=500,
-		order_by="idx asc",
+	rows = project_sites.list_sites_for_project(
+		project=project, engineer=(link.user if engineer_only else None), limit=500
 	)
 	# Preserve legacy keys expected by bot UI: object_name/address/default_engineer.
 	out: list[dict] = []
@@ -784,17 +795,22 @@ def create_service_request(
 	if not site:
 		frappe.throw(_("Missing project_site."))
 
-	if not frappe.db.exists(_project_site_dt(), site):
+	truth_dt = project_sites.truth_doctype()
+	row_dt = project_sites.legacy_row_doctype()
+	if not frappe.db.exists(truth_dt, site) and not (row_dt and frappe.db.exists(row_dt, site)):
 		frappe.throw(_("Project Site not found."))
-	site_doc = frappe.get_doc(_project_site_dt(), site)
-	if getattr(site_doc, "parenttype", None) != "Project" or getattr(site_doc, "parent", None) != project:
+	if not project_sites.site_belongs_to_project(site=site, project=project):
 		frappe.throw(_("Project Site does not belong to selected Project."))
 
 	project_doc = frappe.get_doc("Project", project)
 	project_meta = _project_meta()
 	company = getattr(project_doc, "company", None) if project_meta.has_field("company") else None
 	customer = getattr(project_doc, "customer", None) if project_meta.has_field("customer") else None
-	engineer = getattr(site_doc, "default_engineer", None)
+	engineer = None
+	if frappe.db.exists(truth_dt, site) and frappe.db.has_column(truth_dt, "default_engineer"):
+		engineer = frappe.db.get_value(truth_dt, site, "default_engineer")
+	elif row_dt and frappe.db.exists(row_dt, site) and frappe.db.has_column(row_dt, "default_engineer"):
+		engineer = frappe.db.get_value(row_dt, site, "default_engineer")
 
 	with _as_user(link.user):
 		meta = _service_request_meta()
@@ -816,6 +832,12 @@ def create_service_request(
 			values["project_site"] = site
 		if meta.has_field("assigned_to") and engineer:
 			values["assigned_to"] = engineer
+		if meta.has_field("source_channel"):
+			values["source_channel"] = "Telegram Bot"
+		if meta.has_field("source_reference"):
+			values["source_reference"] = f"chat_id={cint(chat_id)}"
+		if meta.has_field("registered_datetime"):
+			values["registered_datetime"] = now_datetime()
 
 		doc = frappe.get_doc(values)
 		doc.insert(ignore_permissions=True)
@@ -1000,10 +1022,13 @@ def upload_survey_evidence(
 		frappe.throw(_("Missing telegram_file_id."))
 
 	_assert_project_access(link, project)
-	if not frappe.db.exists(_project_site_dt(), project_site):
+	truth_dt = project_sites.truth_doctype()
+	row_dt = project_sites.legacy_row_doctype()
+	if not frappe.db.exists(truth_dt, project_site) and not (
+		row_dt and frappe.db.exists(row_dt, project_site)
+	):
 		frappe.throw(_("Project Site not found."))
-	site_parent = frappe.db.get_value(_project_site_dt(), project_site, "parent")
-	if str(site_parent or "").strip() != project:
+	if not project_sites.site_belongs_to_project(site=project_site, project=project):
 		frappe.throw(_("Project Site does not belong to selected Project."))
 
 	# Ensure Drive folders exist (idempotent).
@@ -1018,7 +1043,16 @@ def upload_survey_evidence(
 		)
 		raise
 
-	site_folder_url = frappe.db.get_value(_project_site_dt(), project_site, "drive_folder_url")
+	site_folder_url = None
+	if frappe.db.exists(truth_dt, project_site) and frappe.db.has_column(truth_dt, "drive_folder_url"):
+		site_folder_url = frappe.db.get_value(truth_dt, project_site, "drive_folder_url")
+	if (
+		not site_folder_url
+		and row_dt
+		and frappe.db.exists(row_dt, project_site)
+		and frappe.db.has_column(row_dt, "drive_folder_url")
+	):
+		site_folder_url = frappe.db.get_value(row_dt, project_site, "drive_folder_url")
 	site_folder_id = _drive_folder_id_from_url(site_folder_url)
 	if not site_folder_id:
 		frappe.throw(_("Drive folder for this object is not configured. Create Drive folders first."))
@@ -1182,12 +1216,16 @@ def _assert_service_request_access(link: LinkedTelegramUser, doc) -> tuple[str, 
 		assigned_to = (getattr(doc, "assigned_to", None) or "").strip()
 		if assigned_to and assigned_to == link.user:
 			return project, site
-		if (
-			site
-			and frappe.db.exists("DocType", _project_site_dt())
-			and frappe.db.exists(_project_site_dt(), site)
-		):
-			engineer = frappe.db.get_value(_project_site_dt(), site, "default_engineer")
+		if site:
+			truth_dt = project_sites.truth_doctype()
+			row_dt = project_sites.legacy_row_doctype()
+			engineer = None
+			if frappe.db.exists(truth_dt, site) and frappe.db.has_column(truth_dt, "default_engineer"):
+				engineer = frappe.db.get_value(truth_dt, site, "default_engineer")
+			elif (
+				row_dt and frappe.db.exists(row_dt, site) and frappe.db.has_column(row_dt, "default_engineer")
+			):
+				engineer = frappe.db.get_value(row_dt, site, "default_engineer")
 			if str(engineer or "").strip() == link.user:
 				return project, site
 		frappe.throw(_("Not permitted"), frappe.PermissionError)
@@ -1266,14 +1304,24 @@ def upload_service_request_attachment(
 		)
 		raise
 
-	if (
-		not site
-		or not frappe.db.exists("DocType", _project_site_dt())
-		or not frappe.db.exists(_project_site_dt(), site)
-	):
+	if not site:
 		frappe.throw(_("Service Request does not have a valid Project Site."))
 
-	site_folder_url = frappe.db.get_value(_project_site_dt(), site, "drive_folder_url")
+	truth_dt = project_sites.truth_doctype()
+	row_dt = project_sites.legacy_row_doctype()
+	if not frappe.db.exists(truth_dt, site) and not (row_dt and frappe.db.exists(row_dt, site)):
+		frappe.throw(_("Service Request does not have a valid Project Site."))
+
+	site_folder_url = None
+	if frappe.db.exists(truth_dt, site) and frappe.db.has_column(truth_dt, "drive_folder_url"):
+		site_folder_url = frappe.db.get_value(truth_dt, site, "drive_folder_url")
+	if (
+		not site_folder_url
+		and row_dt
+		and frappe.db.exists(row_dt, site)
+		and frappe.db.has_column(row_dt, "drive_folder_url")
+	):
+		site_folder_url = frappe.db.get_value(row_dt, site, "drive_folder_url")
 	site_folder_id = _drive_folder_id_from_url(site_folder_url)
 	if not site_folder_id:
 		frappe.throw(_("Drive folder for this object is not configured. Create Drive folders first."))

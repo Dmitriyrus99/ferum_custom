@@ -23,6 +23,11 @@
   "assigned_to",
   "timestamps_section",
   "reported_datetime",
+  "registered_datetime",
+  "source_channel",
+  "source_reference",
+  "source_evidence_file",
+  "external_reported_by",
   "actual_start_datetime",
   "actual_end_datetime",
   "duration_hours",
@@ -154,6 +159,34 @@
    "fieldname": "reported_datetime",
    "fieldtype": "Datetime",
    "label": "Дата обращения"
+  },
+  {
+   "fieldname": "registered_datetime",
+   "fieldtype": "Datetime",
+   "label": "Зарегистрировано в ERP",
+   "read_only": 1
+  },
+  {
+   "default": "ERP Desk",
+   "fieldname": "source_channel",
+   "fieldtype": "Select",
+   "label": "Источник",
+   "options": "ERP Desk\nTelegram Bot\nEmail\nPhone\nEIS\nOther"
+  },
+  {
+   "fieldname": "source_reference",
+   "fieldtype": "Data",
+   "label": "Источник (reference)"
+  },
+  {
+   "fieldname": "source_evidence_file",
+   "fieldtype": "Attach",
+   "label": "Подтверждение (файл)"
+  },
+  {
+   "fieldname": "external_reported_by",
+   "fieldtype": "Data",
+   "label": "Кто сообщил (внешний источник)"
   },
   {
    "fieldname": "actual_start_datetime",

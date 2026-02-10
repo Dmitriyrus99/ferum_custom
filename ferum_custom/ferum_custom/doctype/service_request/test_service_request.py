@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import frappe
 from frappe.tests.utils import FrappeTestCase
+from frappe.utils import add_to_date, now_datetime
 
 # Keep test record generation minimal for this app's doctypes.
 #
@@ -15,6 +16,7 @@ test_ignore = [
 	"Customer",
 	"Project",
 	"Project Site",
+	"Project Site Row",
 	"SLA Policy",
 	"Service Department",
 	"Service Object",
@@ -67,15 +69,12 @@ class TestServiceRequest(FrappeTestCase):
 		ps = frappe.get_doc(
 			{
 				"doctype": "Project Site",
-				"parenttype": "Project",
-				"parent": project_name,
-				"parentfield": "project_sites",
+				"project": project_name,
 				"site_name": f"Test Site {suffix} {frappe.generate_hash(length=6)}",
 				"address": "Test Address",
-				"idx": 1,
 			}
 		)
-		ps.insert(ignore_permissions=True)
+		ps.insert(ignore_permissions=True, ignore_mandatory=True)
 		return ps
 
 	def test_sync_customer_and_company_from_project(self) -> None:
@@ -106,6 +105,40 @@ class TestServiceRequest(FrappeTestCase):
 				"title": "Test SR mismatch",
 				"erp_project": project_a.name,
 				"project_site": ps_b.name,
+			}
+		)
+		with self.assertRaises(frappe.exceptions.ValidationError):
+			sr.insert(ignore_permissions=True)
+
+	def test_registered_datetime_is_set_on_insert(self) -> None:
+		project = self._make_project("A")
+		ps = self._make_project_site(project.name, "A")
+
+		sr = frappe.get_doc(
+			{
+				"doctype": "Service Request",
+				"title": "Test SR registered",
+				"erp_project": project.name,
+				"project_site": ps.name,
+			}
+		)
+		sr.insert(ignore_permissions=True)
+
+		self.assertTrue(getattr(sr, "registered_datetime", None))
+
+	def test_external_source_requires_reference_when_reported_differs(self) -> None:
+		project = self._make_project("A")
+		ps = self._make_project_site(project.name, "A")
+
+		sr = frappe.get_doc(
+			{
+				"doctype": "Service Request",
+				"title": "Test SR external evidence",
+				"erp_project": project.name,
+				"project_site": ps.name,
+				"source_channel": "Email",
+				"registered_datetime": now_datetime(),
+				"reported_datetime": add_to_date(now_datetime(), hours=-2),
 			}
 		)
 		with self.assertRaises(frappe.exceptions.ValidationError):

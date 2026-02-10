@@ -1,18 +1,63 @@
 {
   "actions": [],
-  "allow_rename": 1,
-  "creation": "2025-12-25 00:00:00.000000",
+  "allow_rename": 0,
+  "autoname": "PS-.#####",
+  "creation": "2026-02-10 00:00:00.000000",
   "doctype": "DocType",
-  "editable_grid": 1,
   "engine": "InnoDB",
   "field_order": [
+    "contract",
+    "project",
+    "company",
+    "customer",
     "site_name",
     "address",
-    "drive_folder_url",
+    "region",
+    "city",
     "default_engineer",
-    "notes"
+    "is_active",
+    "drive_folder_url",
+    "drive_folder_id",
+    "access_requirements",
+    "notes",
+    "legacy_key",
+    "equipment_section",
+    "equipment_list",
+    "service_plan_section",
+    "service_plan",
+    "sla_policy_section",
+    "sla_policy"
   ],
   "fields": [
+    {
+      "fieldname": "contract",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Договор",
+      "options": "Contract",
+      "reqd": 1
+    },
+    {
+      "fieldname": "project",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Проект (контейнер)",
+      "options": "Project"
+    },
+    {
+      "fieldname": "company",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Организация",
+      "options": "Company"
+    },
+    {
+      "fieldname": "customer",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Заказчик",
+      "options": "Customer"
+    },
     {
       "fieldname": "site_name",
       "fieldtype": "Data",
@@ -28,9 +73,14 @@
       "reqd": 1
     },
     {
-      "fieldname": "drive_folder_url",
+      "fieldname": "region",
       "fieldtype": "Data",
-      "label": "Папка Google Drive"
+      "label": "Регион"
+    },
+    {
+      "fieldname": "city",
+      "fieldtype": "Data",
+      "label": "Город"
     },
     {
       "fieldname": "default_engineer",
@@ -40,14 +90,75 @@
       "options": "User"
     },
     {
+      "default": "1",
+      "fieldname": "is_active",
+      "fieldtype": "Check",
+      "in_list_view": 1,
+      "label": "Активен"
+    },
+    {
+      "fieldname": "drive_folder_url",
+      "fieldtype": "Data",
+      "label": "Папка Google Drive"
+    },
+    {
+      "fieldname": "drive_folder_id",
+      "fieldtype": "Data",
+      "hidden": 1,
+      "label": "Google Drive folder id"
+    },
+    {
+      "fieldname": "access_requirements",
+      "fieldtype": "Small Text",
+      "label": "Требования доступа/пропуска"
+    },
+    {
       "fieldname": "notes",
       "fieldtype": "Small Text",
       "label": "Примечание"
+    },
+    {
+      "fieldname": "legacy_key",
+      "fieldtype": "Data",
+      "label": "Legacy key"
+    },
+    {
+      "fieldname": "equipment_section",
+      "fieldtype": "Section Break",
+      "label": "Оборудование"
+    },
+    {
+      "fieldname": "equipment_list",
+      "fieldtype": "Table",
+      "label": "Оборудование",
+      "options": "Project Site Equipment Item"
+    },
+    {
+      "fieldname": "service_plan_section",
+      "fieldtype": "Section Break",
+      "label": "План обслуживания"
+    },
+    {
+      "fieldname": "service_plan",
+      "fieldtype": "Table",
+      "label": "План обслуживания",
+      "options": "Project Site Service Plan Item"
+    },
+    {
+      "fieldname": "sla_policy_section",
+      "fieldtype": "Section Break",
+      "label": "SLA"
+    },
+    {
+      "fieldname": "sla_policy",
+      "fieldtype": "Table",
+      "label": "SLA",
+      "options": "Project Site SLA Policy Item"
     }
   ],
-  "istable": 1,
+  "idx": 0,
   "links": [],
-  "modified": "2025-12-25 00:00:00.000000",
+  "modified": "2026-02-10 00:00:00.000000",
   "modified_by": "Administrator",
   "module": "Ferum Custom",
   "name": "Project Site",
@@ -73,10 +184,19 @@
       "read": 1,
       "role": "Office Manager",
       "write": 1
+    },
+    {
+      "read": 1,
+      "role": "Service Engineer"
+    },
+    {
+      "read": 1,
+      "role": "Client"
     }
   ],
   "row_format": "Dynamic",
   "sort_field": "modified",
   "sort_order": "DESC",
-  "states": []
+  "states": [],
+  "track_changes": 1
 }

@@ -8,14 +8,17 @@ from frappe.utils import add_to_date, get_datetime, now
 from ferum_custom.config.settings import get_settings
 from ferum_custom.config.types import parse_int
 from ferum_custom.notifications import send_telegram_notification_to_fastapi
+from ferum_custom.utils import project_sites
 
 
 class ServiceRequest(Document):
 	def validate(self):
+		self._sync_source_timestamps()
 		self._sync_contract_customer_project()
 		self._validate_workflow_transitions()
 		self._calculate_duration_hours()
 		self._calculate_sla_deadline()
+		self._validate_reported_source_evidence()
 
 	def on_update(self):
 		self._check_sla_breach()
@@ -62,13 +65,16 @@ class ServiceRequest(Document):
 		project_site = str(getattr(self, "project_site", None) or "").strip()
 		if not project_site:
 			return
-		if not frappe.db.exists("Project Site", project_site):
+		erp_project = str(getattr(self, "erp_project", None) or "").strip()
+
+		# Accept both truth and legacy row doctypes during migration/cutover.
+		truth_exists = frappe.db.exists(project_sites.truth_doctype(), project_site)
+		row_dt = project_sites.legacy_row_doctype()
+		legacy_exists = bool(row_dt and frappe.db.exists(row_dt, project_site))
+		if not truth_exists and not legacy_exists:
 			frappe.throw(_("Project Site not found: {0}.").format(frappe.bold(project_site)))
 
-		parent = frappe.db.get_value("Project Site", project_site, "parent")
-		parent = str(parent or "").strip()
-		erp_project = str(getattr(self, "erp_project", None) or "").strip()
-		if erp_project and parent and parent != erp_project:
+		if erp_project and not project_sites.site_belongs_to_project(site=project_site, project=erp_project):
 			frappe.throw(
 				_("Project Site {0} does not belong to Project {1}.").format(
 					frappe.bold(project_site), frappe.bold(erp_project)
@@ -170,7 +176,11 @@ class ServiceRequest(Document):
 		if getattr(self, "status", None) == "Cancelled":
 			return
 
-		base = getattr(self, "reported_datetime", None) or getattr(self, "creation", None)
+		base = (
+			getattr(self, "reported_datetime", None)
+			or getattr(self, "registered_datetime", None)
+			or getattr(self, "creation", None)
+		)
 		if not base:
 			return
 
@@ -216,6 +226,65 @@ class ServiceRequest(Document):
 		except Exception:
 			pass
 		_notify_sla_breach(message)
+
+	def _sync_source_timestamps(self) -> None:
+		"""Fill registration/source defaults in a backward-compatible way."""
+		if self.meta.has_field("registered_datetime") and not getattr(self, "registered_datetime", None):
+			# Use a deterministic value for inserts; for older records keep empty.
+			if self.is_new():
+				self.registered_datetime = now()
+
+		if self.meta.has_field("source_channel") and not getattr(self, "source_channel", None):
+			# Default for desk inserts; bot/API can override explicitly.
+			self.source_channel = "ERP Desk"
+
+	def _validate_reported_source_evidence(self) -> None:
+		"""When reported time differs from registered time for external sources, require evidence."""
+		if not (
+			self.meta.has_field("reported_datetime")
+			and self.meta.has_field("registered_datetime")
+			and self.meta.has_field("source_channel")
+		):
+			return
+
+		reported = getattr(self, "reported_datetime", None)
+		registered = getattr(self, "registered_datetime", None)
+		if not reported or not registered:
+			return
+
+		try:
+			reported_dt = get_datetime(reported)
+			registered_dt = get_datetime(registered)
+		except Exception:
+			return
+
+		if abs((reported_dt - registered_dt).total_seconds()) < 1:
+			return
+
+		source = str(getattr(self, "source_channel", "") or "").strip()
+		external_sources = {"Email", "Phone", "EIS", "Other"}
+		if source not in external_sources:
+			return
+
+		ref = (
+			str(getattr(self, "source_reference", "") or "").strip()
+			if self.meta.has_field("source_reference")
+			else ""
+		)
+		evidence = (
+			str(getattr(self, "source_evidence_file", "") or "").strip()
+			if self.meta.has_field("source_evidence_file")
+			else ""
+		)
+		if ref or evidence:
+			return
+
+		frappe.throw(
+			_(
+				"Для внешних источников при отличии 'Дата обращения' от 'Зарегистрировано в ERP' "
+				"нужно заполнить 'Источник (reference)' или приложить 'Подтверждение (файл)'."
+			)
+		)
 
 
 def _pick_contract_for_service_object(

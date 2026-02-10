@@ -3,6 +3,20 @@ from __future__ import annotations
 import frappe
 
 
+def _project_sites_child_doctype() -> str | None:
+	"""Return legacy child doctype used by Project.project_sites (Table)."""
+	if frappe.db.exists("DocType", "Project Site Row"):
+		return "Project Site Row"
+	if frappe.db.exists("DocType", "Project Site"):
+		try:
+			dt = frappe.get_doc("DocType", "Project Site")
+			if int(getattr(dt, "istable", 0) or 0) == 1:
+				return "Project Site"
+		except Exception:
+			return None
+	return None
+
+
 def _insert_project_site(
 	*,
 	project: str,
@@ -13,9 +27,12 @@ def _insert_project_site(
 	notes: str,
 ) -> None:
 	# Insert directly into child table to avoid triggering Project validate hooks (P0 gates).
+	child_dt = _project_sites_child_doctype()
+	if not child_dt:
+		return
 	doc = frappe.get_doc(
 		{
-			"doctype": "Project Site",
+			"doctype": child_dt,
 			"parenttype": "Project",
 			"parent": project,
 			"parentfield": "project_sites",
@@ -40,7 +57,8 @@ def execute() -> None:
 	"""
 	if not frappe.db.exists("DocType", "Project"):
 		return
-	if not frappe.db.exists("DocType", "Project Site"):
+	child_dt = _project_sites_child_doctype()
+	if not child_dt:
 		return
 	if not frappe.get_meta("Project").has_field("project_sites"):
 		return
@@ -59,7 +77,7 @@ def execute() -> None:
 			continue
 
 		# Skip if already has at least 1 Project Site.
-		if frappe.get_all("Project Site", filters={"parenttype": "Project", "parent": project_name}, limit=1):
+		if frappe.get_all(child_dt, filters={"parenttype": "Project", "parent": project_name}, limit=1):
 			continue
 
 		legacy_service_project = frappe.db.get_value("Contract", contract, "contract_code")

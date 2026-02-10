@@ -1,0 +1,102 @@
+{
+  "actions": [],
+  "allow_rename": 0,
+  "autoname": "SLB-.#####",
+  "creation": "2026-02-10 00:00:00.000000",
+  "doctype": "DocType",
+  "engine": "InnoDB",
+  "field_order": [
+    "project_site",
+    "year",
+    "book_type",
+    "paper_book_no",
+    "storage_location",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "project_site",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Объект (Project Site)",
+      "options": "Project Site",
+      "reqd": 1
+    },
+    {
+      "fieldname": "year",
+      "fieldtype": "Int",
+      "in_list_view": 1,
+      "label": "Год",
+      "reqd": 1
+    },
+    {
+      "default": "Electronic",
+      "fieldname": "book_type",
+      "fieldtype": "Select",
+      "in_list_view": 1,
+      "label": "Тип журнала",
+      "options": "Electronic\nPaper",
+      "reqd": 1
+    },
+    {
+      "depends_on": "eval:doc.book_type=='Paper'",
+      "fieldname": "paper_book_no",
+      "fieldtype": "Data",
+      "label": "Номер бумажного журнала"
+    },
+    {
+      "depends_on": "eval:doc.book_type=='Paper'",
+      "fieldname": "storage_location",
+      "fieldtype": "Data",
+      "label": "Место хранения"
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "Примечание"
+    }
+  ],
+  "idx": 0,
+  "links": [],
+  "modified": "2026-02-10 00:00:00.000000",
+  "modified_by": "Administrator",
+  "module": "Ferum Custom",
+  "name": "Service Logbook",
+  "owner": "Administrator",
+  "permissions": [
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "System Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "Project Manager",
+      "write": 1
+    },
+    {
+      "create": 1,
+      "delete": 1,
+      "read": 1,
+      "role": "Office Manager",
+      "write": 1
+    },
+    {
+      "read": 1,
+      "role": "Service Engineer"
+    },
+    {
+      "read": 1,
+      "role": "Client"
+    }
+  ],
+  "row_format": "Dynamic",
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "states": [],
+  "track_changes": 1
+}

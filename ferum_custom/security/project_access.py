@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import frappe
 
+from ferum_custom.utils import project_sites
+
 
 def _user_permissions(user: str, allow: str) -> set[str]:
 	if not frappe.db.exists("DocType", "User Permission"):
@@ -80,21 +82,31 @@ def user_has_project_access(*, user: str, project: str) -> bool:
 			return True
 
 	# Engineer access via Project Site.default_engineer
-	if frappe.db.exists("DocType", "Project Site") and frappe.db.has_column(
-		"Project Site", "default_engineer"
+	truth_dt = project_sites.truth_doctype()
+	if (
+		frappe.db.exists("DocType", truth_dt)
+		and frappe.db.has_column(truth_dt, "default_engineer")
+		and frappe.db.has_column(truth_dt, "project")
 	):
-		rows = frappe.db.sql(
-			"""
-            select 1
-            from `tabProject Site`
-            where parenttype = 'Project'
-              and parent = %(project)s
-              and ifnull(default_engineer,'') = %(user)s
-            limit 1
-            """,
-			{"project": project, "user": user},
-		)
-		if rows:
+		if frappe.db.exists(truth_dt, {"project": project, "default_engineer": user}):
+			return True
+
+	row_dt = project_sites.legacy_row_doctype()
+	if (
+		row_dt
+		and frappe.db.exists("DocType", row_dt)
+		and frappe.db.has_column(row_dt, "default_engineer")
+		and frappe.db.has_column(row_dt, "parent")
+	):
+		if frappe.db.exists(
+			row_dt,
+			{
+				"parenttype": "Project",
+				"parentfield": "project_sites",
+				"parent": project,
+				"default_engineer": user,
+			},
+		):
 			return True
 
 	if frappe.db.exists("DocType", "User Permission"):
@@ -155,20 +167,43 @@ def projects_for_user(user: str) -> set[str]:
 				)
 			)
 
-	if frappe.db.exists("DocType", "Project Site") and frappe.db.has_column(
-		"Project Site", "default_engineer"
+	truth_dt = project_sites.truth_doctype()
+	if (
+		frappe.db.exists("DocType", truth_dt)
+		and frappe.db.has_column(truth_dt, "default_engineer")
+		and frappe.db.has_column(truth_dt, "project")
 	):
-		rows = frappe.db.sql(
-			"""
-            select distinct parent
-            from `tabProject Site`
-            where parenttype = 'Project'
-              and ifnull(default_engineer,'') = %(user)s
-            limit 500
-            """,
-			{"user": user},
+		projects.update(
+			{
+				str(p)
+				for p in frappe.get_all(
+					truth_dt,
+					filters={"default_engineer": user},
+					pluck="project",
+					limit=500,
+				)
+				if p
+			}
 		)
-		projects.update({str(r[0]) for r in rows if r and r[0]})
+
+	row_dt = project_sites.legacy_row_doctype()
+	if row_dt and frappe.db.exists("DocType", row_dt) and frappe.db.has_column(row_dt, "default_engineer"):
+		projects.update(
+			{
+				str(p)
+				for p in frappe.get_all(
+					row_dt,
+					filters={
+						"parenttype": "Project",
+						"parentfield": "project_sites",
+						"default_engineer": user,
+					},
+					pluck="parent",
+					limit=500,
+				)
+				if p
+			}
+		)
 
 	projects.update(_user_permissions(user, "Project"))
 
