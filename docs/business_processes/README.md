@@ -12,6 +12,7 @@ Document & Attachment Management along with Monitoring, Analytics & Security sup
 
 ## Process Guides
 
+- [Описание бизнес‑процессов (AS‑IS, RU)](business_processes_ru.md)
 - [Project & Contract Management](project_contract_management.md)
 - [Service Request Management](service_request_management.md)
 - [Work Reporting](work_reporting.md)
