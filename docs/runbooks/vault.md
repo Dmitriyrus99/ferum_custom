@@ -52,6 +52,11 @@ Dry-run (что будет записано):
 
 - `bench --site <site> execute ferum_custom.api.vault.sync_settings_to_vault --kwargs "{'dry_run': 1, 'only_missing': 1}"`
 
+Если Vault в состоянии **sealed** (unseal ещё не выполнен), режим `only_missing=1` не сможет прочитать текущие
+значения из KV. В этом случае для предварительного просмотра списка ключей используй:
+
+- `bench --site <site> execute ferum_custom.api.vault.sync_settings_to_vault --kwargs "{'dry_run': 1, 'only_missing': 0}"`
+
 Применить:
 
 - `bench --site <site> execute ferum_custom.api.vault.sync_settings_to_vault --kwargs "{'dry_run': 0, 'only_missing': 1}"`
