@@ -1,11 +1,21 @@
 {
-  "ok": true,
-  "generated_at": "2026-02-11T10:29:00.083069",
+  "ok": false,
+  "generated_at": "2026-02-11T10:53:54.260388",
   "site": "erpclone.ferumrus.ru",
-  "issues": [],
+  "issues": [
+    {
+      "code": "vault.sealed",
+      "severity": "P1",
+      "message": "Vault is configured but sealed (unseal required).",
+      "context": {
+        "status_code": 503,
+        "version": "1.21.1"
+      }
+    }
+  ],
   "system_health": {
     "ok": true,
-    "generated_at": "2026-02-11T10:29:02.679092",
+    "generated_at": "2026-02-11T10:53:54.657483",
     "wkhtmltopdf": {
       "installed": true,
       "version": "wkhtmltopdf 0.12.6"
@@ -19,8 +29,15 @@
       "configured": true
     },
     "vault": {
-      "configured": false,
-      "auth": "missing"
+      "configured": true,
+      "auth": "approle",
+      "health": {
+        "ok": false,
+        "status_code": 503,
+        "sealed": true,
+        "initialized": true,
+        "version": "1.21.1"
+      }
     },
     "security_validation": {
       "ok": true,

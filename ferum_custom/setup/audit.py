@@ -317,6 +317,38 @@ def check_system_health() -> tuple[dict[str, Any] | None, list[AuditIssue]]:
 		# Bench execute context might not have a session user; use Administrator for checks.
 		frappe.set_user("Administrator")
 		out = status()
+
+		# Interpret health payload into actionable audit issues (non-secret).
+		if isinstance(out, dict):
+			vault = out.get("vault") if isinstance(out.get("vault"), dict) else {}
+			if isinstance(vault, dict) and bool(vault.get("configured")):
+				health = vault.get("health") if isinstance(vault.get("health"), dict) else {}
+				if isinstance(health, dict):
+					if bool(health.get("sealed")):
+						issues.append(
+							AuditIssue(
+								code="vault.sealed",
+								severity="P1",
+								message="Vault is configured but sealed (unseal required).",
+								context={
+									"status_code": health.get("status_code"),
+									"version": health.get("version"),
+								},
+							)
+						)
+					elif not bool(health.get("ok")):
+						issues.append(
+							AuditIssue(
+								code="vault.unhealthy",
+								severity="P1",
+								message="Vault is configured but health check is not OK.",
+								context={
+									"status_code": health.get("status_code"),
+									"version": health.get("version"),
+								},
+							)
+						)
+
 		return out, issues
 	except Exception as exc:
 		issues.append(
