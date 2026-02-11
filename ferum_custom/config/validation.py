@@ -42,6 +42,46 @@ def validate_security() -> dict:
 				)
 			)
 
+	def _check_secret_file_permissions(*, code: str, path: str | None) -> None:
+		path = clean_str(path)
+		if not path:
+			return
+		safe = _file_mode_safe(Path(path))
+		if safe is False:
+			issues.append(
+				ValidationIssue(
+					code=code,
+					severity="P1",
+					message=f"Secret file permissions are too open: {path}. Recommend chmod 600.",
+				)
+			)
+
+	# Vault auth material should never be group/other readable.
+	_check_secret_file_permissions(
+		code="vault.token_file.permissions",
+		path=settings.get("VAULT_TOKEN_FILE", "FERUM_VAULT_TOKEN_FILE"),
+	)
+	_check_secret_file_permissions(
+		code="vault.role_id_file.permissions",
+		path=settings.get("VAULT_ROLE_ID_FILE", "FERUM_VAULT_ROLE_ID_FILE"),
+	)
+	_check_secret_file_permissions(
+		code="vault.secret_id_file.permissions",
+		path=settings.get(
+			"VAULT_SECRET_ID_FILE", "FERUM_VAULT_SECRET_ID_FILE", "VAULT_APPROLE_SECRET_ID_FILE"
+		),
+	)
+
+	# Google service account key path (legacy mode) should also be protected on disk.
+	_check_secret_file_permissions(
+		code="google.service_account_key.permissions",
+		path=settings.get(
+			"FERUM_GOOGLE_DRIVE_SERVICE_ACCOUNT_KEY_PATH",
+			"GOOGLE_DRIVE_SERVICE_ACCOUNT_KEY_PATH",
+			"google_drive_service_account_key_path",
+		),
+	)
+
 	vault_addr = settings.get("VAULT_ADDR", "FERUM_VAULT_ADDR")
 	if vault_addr and vault_addr.startswith("http://"):
 		issues.append(
