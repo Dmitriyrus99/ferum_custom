@@ -1,0 +1,38 @@
+{
+  "ok": true,
+  "generated_at": "2026-02-11T10:29:00.083069",
+  "site": "erpclone.ferumrus.ru",
+  "issues": [],
+  "system_health": {
+    "ok": true,
+    "generated_at": "2026-02-11T10:29:02.679092",
+    "wkhtmltopdf": {
+      "installed": true,
+      "version": "wkhtmltopdf 0.12.6"
+    },
+    "telegram_bot": {
+      "configured": true,
+      "mode": "webhook",
+      "frappe_api_configured": true
+    },
+    "fastapi": {
+      "configured": true
+    },
+    "vault": {
+      "configured": false,
+      "auth": "missing"
+    },
+    "security_validation": {
+      "ok": true,
+      "dotenv_path": "/home/frappe/frappe-bench/.env",
+      "issues": []
+    },
+    "google_drive": {
+      "ok": true,
+      "root_folder_id": "1QH1o_V9NmpMawgVS8gLC3N3zFb4ejtT8",
+      "root_folder_url": "https://drive.google.com/drive/folders/1QH1o_V9NmpMawgVS8gLC3N3zFb4ejtT8",
+      "service_account_email": "erpclonne@gen-lang-client-0550267662.iam.gserviceaccount.com",
+      "service_account_project_id": "gen-lang-client-0550267662"
+    }
+  }
+}
