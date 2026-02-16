@@ -1,0 +1,56 @@
+{
+  "doctype": "DocType",
+  "name": "My DocType",
+  "module": "Ferum Custom",
+  "custom": 0,
+  "istable": 0,
+  "is_submittable": 0,
+  "engine": "InnoDB",
+  "autoname": "MYDT-.#####",
+  "allow_rename": 0,
+  "track_changes": 1,
+  "actions": [],
+  "links": [],
+  "field_order": [
+    "title",
+    "status",
+    "details_section",
+    "notes"
+  ],
+  "fields": [
+    {
+      "fieldname": "title",
+      "fieldtype": "Data",
+      "label": "Title",
+      "reqd": 1,
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "status",
+      "fieldtype": "Select",
+      "label": "Status",
+      "options": "Open\nClosed",
+      "default": "Open",
+      "in_list_view": 1
+    },
+    {
+      "fieldname": "details_section",
+      "fieldtype": "Section Break",
+      "label": "Details"
+    },
+    {
+      "fieldname": "notes",
+      "fieldtype": "Small Text",
+      "label": "Notes"
+    }
+  ],
+  "permissions": [
+    {
+      "role": "System Manager",
+      "read": 1,
+      "write": 1,
+      "create": 1,
+      "delete": 1
+    }
+  ]
+}

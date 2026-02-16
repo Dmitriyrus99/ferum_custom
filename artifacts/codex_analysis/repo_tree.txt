@@ -1,0 +1,591 @@
+.
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml
+│   │   ├── linter.yml
+│   │   └── security.yml
+│   ├── pull_request_template.md
+│   └── semgrep-rules.version
+├── artifacts/
+│   └── codex_analysis/
+│       └── templates/
+├── backend/
+│   ├── bot/
+│   │   ├── __init__.py
+│   │   └── telegram_bot.py
+│   ├── routers/
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── invoices.py
+│   │   ├── metrics.py
+│   │   ├── notifications.py
+│   │   ├── projects.py
+│   │   ├── reports.py
+│   │   └── requests.py
+│   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── test_contract_frappe_api.py
+│   │   ├── test_main.py
+│   │   └── test_settings_vault.py
+│   ├── __init__.py
+│   ├── auth.py
+│   ├── config.py
+│   ├── frappe_client.py
+│   ├── google_integration_notes.md
+│   ├── main.py
+│   ├── pyproject.toml
+│   ├── requirements.txt
+│   └── staging_notes.md
+├── docs/
+│   ├── architecture/
+│   │   ├── project_as_container.md
+│   │   └── project_site_tobe.md
+│   ├── audit/
+│   │   ├── 2026-02-05_audit.md
+│   │   ├── 2026-02-09_audit.md
+│   │   ├── 2026-02-09_runtime_audit_erpclone.ferumrus.ru.json
+│   │   ├── 2026-02-09_runtime_audit_test_site.json
+│   │   ├── 2026-02-10_runtime_audit_erpclone.ferumrus.ru.json
+│   │   ├── 2026-02-10_runtime_audit_test_site.json
+│   │   ├── 2026-02-11_runtime_audit_erpclone.ferumrus.ru.json
+│   │   ├── 2026-02-11_runtime_audit_test_site.json
+│   │   ├── duplicated_package_segments.txt
+│   │   ├── erpclone.ferumrus.ru_module_meta_import_failures.txt
+│   │   ├── hooks_import_check.txt
+│   │   ├── import_map_summary.json
+│   │   ├── package_dirs.txt
+│   │   ├── phase_1_vault_config.md
+│   │   ├── phase_2_technical_debt.md
+│   │   ├── phase_3_scaling.md
+│   │   ├── project_p0_usage_rg.txt
+│   │   ├── project_site_usage_files.txt
+│   │   ├── project_site_usage_rg.txt
+│   │   ├── README.md
+│   │   ├── test_site_doctype_tree_check.txt
+│   │   └── test_site_module_meta_import_failures.txt
+│   ├── business_processes/
+│   │   ├── business_processes_ru.md
+│   │   ├── business_processes_ru_legacy.md
+│   │   ├── document_attachment_management.md
+│   │   ├── erpnext_project_full_cycle.md
+│   │   ├── erpnext_project_full_cycle_legacy.md
+│   │   ├── hr_payroll_management.md
+│   │   ├── invoicing_payments.md
+│   │   ├── monitoring_analytics_security_bp.md
+│   │   ├── project_contract_management.md
+│   │   ├── README.md
+│   │   ├── service_request_management.md
+│   │   └── work_reporting.md
+│   ├── images/
+│   │   ├── document_attachment_management_process.svg
+│   │   ├── entity_relationship_diagram.svg
+│   │   ├── hr_payroll_management_process.svg
+│   │   ├── invoicing_payments_process.svg
+│   │   ├── monitoring_analytics_security_process.svg
+│   │   ├── project_contract_management_process.svg
+│   │   ├── service_request_management_process.svg
+│   │   └── work_reporting_process.svg
+│   ├── legacy/
+│   │   └── archive/
+│   │       ├── install_erpnext.log
+│   │       ├── install_erpnext_attempt.log
+│   │       ├── install_erpnext_force.log
+│   │       ├── install_frappe.log
+│   │       └── redis_queue.rdb
+│   ├── module_breakdown/
+│   │   ├── analytics_reporting_module.md
+│   │   ├── document_management_module.md
+│   │   ├── hr_payroll_module.md
+│   │   ├── invoicing_module.md
+│   │   ├── notifications_communications_module.md
+│   │   ├── project_contract_management_module.md
+│   │   ├── README.md
+│   │   ├── service_request_management_module.md
+│   │   └── work_report_completion_module.md
+│   ├── runbooks/
+│   │   ├── google_drive_structure.md
+│   │   ├── product_readiness_checklist.md
+│   │   ├── quality_gates.md
+│   │   ├── runtime_audit.md
+│   │   ├── telegram_bot.md
+│   │   └── vault.md
+│   ├── user_stories/
+│   │   ├── administrator_user_stories.md
+│   │   ├── chief_accountant_user_stories.md
+│   │   ├── client_user_stories.md
+│   │   ├── department_head_user_stories.md
+│   │   ├── general_director_user_stories.md
+│   │   ├── office_manager_user_stories.md
+│   │   ├── project_manager_user_stories.md
+│   │   ├── README.md
+│   │   ├── service_engineer_user_stories.md
+│   │   └── user_stories_intro.md
+│   ├── api_design.md
+│   ├── codex_todo_contract_project_objects_acts.md
+│   ├── deployment_ci_cd.md
+│   ├── entity_relationship_model.md
+│   ├── glossary_appendix.md
+│   ├── integrations.md
+│   ├── package_refactor_report.md
+│   ├── README.md
+│   ├── security_architecture.md
+│   ├── system_overview.md
+│   └── user_roles_permissions_matrix.md
+├── ferum_custom/
+│   ├── analytics/
+│   │   ├── mv_cashflow_daily.sql
+│   │   ├── mv_contract_overview.sql
+│   │   ├── mv_invoice_balance.sql
+│   │   └── views.sql
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── project_documents.py
+│   │   ├── project_drive.py
+│   │   ├── project_p0.py
+│   │   ├── service.py
+│   │   ├── system_health.py
+│   │   ├── telegram_bot.py
+│   │   └── vault.py
+│   ├── assign/
+│   ├── config/
+│   │   ├── __init__.py
+│   │   ├── dotenv.py
+│   │   ├── settings.py
+│   │   ├── types.py
+│   │   ├── validation.py
+│   │   └── vault.py
+│   ├── constants/
+│   ├── custom/
+│   ├── data_cleanup/
+│   ├── demo/
+│   ├── document_management/
+│   ├── domain/
+│   │   ├── analytics/
+│   │   ├── finance/
+│   │   │   └── scripts/
+│   │   └── service/
+│   ├── erpnext_ext/
+│   ├── etl/
+│   ├── ferum_custom/
+│   │   ├── doctype/
+│   │   │   ├── actschedule/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── actschedule.json
+│   │   │   │   └── actschedule.py
+│   │   │   ├── audit_event/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── audit_event.json
+│   │   │   │   └── audit_event.py
+│   │   │   ├── contractserviceobject/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── contractserviceobject.json
+│   │   │   │   └── contractserviceobject.py
+│   │   │   ├── custom_attachment/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── custom_attachment.json
+│   │   │   │   └── custom_attachment.py
+│   │   │   ├── document_attachment_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── document_attachment_item.json
+│   │   │   │   └── document_attachment_item.py
+│   │   │   ├── document_template/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── document_template.json
+│   │   │   │   └── document_template.py
+│   │   │   ├── ferum_custom_settings/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── ferum_custom_settings.json
+│   │   │   │   └── ferum_custom_settings.py
+│   │   │   ├── ferum_invoice_notification_role/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── ferum_invoice_notification_role.json
+│   │   │   │   └── ferum_invoice_notification_role.py
+│   │   │   ├── financial_detail/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── financial_detail.json
+│   │   │   │   └── financial_detail.py
+│   │   │   ├── invoice/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── invoice.json
+│   │   │   │   └── invoice.py
+│   │   │   ├── payroll_entry_custom/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── payroll_entry_custom.json
+│   │   │   │   └── payroll_entry_custom.py
+│   │   │   ├── payroll_entry_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── payroll_entry_item.json
+│   │   │   │   └── payroll_entry_item.py
+│   │   │   ├── project_billing_period/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── project_billing_period.json
+│   │   │   │   └── project_billing_period.py
+│   │   │   ├── project_customer_contact/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── project_customer_contact.json
+│   │   │   │   └── project_customer_contact.py
+│   │   │   ├── project_object_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── project_object_item.json
+│   │   │   │   └── project_object_item.py
+│   │   │   ├── project_outbound_mail_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── project_outbound_mail_item.json
+│   │   │   │   └── project_outbound_mail_item.py
+│   │   │   ├── project_site/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── project_site.json
+│   │   │   │   └── project_site.py
+│   │   │   ├── project_site_equipment_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── project_site_equipment_item.json
+│   │   │   │   └── project_site_equipment_item.py
+│   │   │   ├── project_site_row/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── project_site_row.json
+│   │   │   │   └── project_site_row.py
+│   │   │   ├── project_site_service_plan_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── project_site_service_plan_item.json
+│   │   │   │   └── project_site_service_plan_item.py
+│   │   │   ├── project_site_sla_policy_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── project_site_sla_policy_item.json
+│   │   │   │   └── project_site_sla_policy_item.py
+│   │   │   ├── project_survey_checklist_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── project_survey_checklist_item.json
+│   │   │   │   └── project_survey_checklist_item.py
+│   │   │   ├── project_telegram_user_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── project_telegram_user_item.json
+│   │   │   │   └── project_telegram_user_item.py
+│   │   │   ├── request_photo_attachment_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── request_photo_attachment_item.json
+│   │   │   │   └── request_photo_attachment_item.py
+│   │   │   ├── service_department/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── service_department.json
+│   │   │   │   └── service_department.py
+│   │   │   ├── service_log_entry/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── service_log_entry.json
+│   │   │   │   └── service_log_entry.py
+│   │   │   ├── service_logbook/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── service_logbook.json
+│   │   │   │   └── service_logbook.py
+│   │   │   ├── service_maintenance_schedule/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── service_maintenance_schedule.json
+│   │   │   │   └── service_maintenance_schedule.py
+│   │   │   ├── service_maintenance_schedule_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── service_maintenance_schedule_item.json
+│   │   │   │   └── service_maintenance_schedule_item.py
+│   │   │   ├── service_object/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── service_object.json
+│   │   │   │   └── service_object.py
+│   │   │   ├── service_project/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── service_project.json
+│   │   │   │   └── service_project.py
+│   │   │   ├── service_report/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── service_report.json
+│   │   │   │   └── service_report.py
+│   │   │   ├── service_report_document_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── service_report_document_item.json
+│   │   │   │   └── service_report_document_item.py
+│   │   │   ├── service_report_work_item/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── service_report_work_item.json
+│   │   │   │   └── service_report_work_item.py
+│   │   │   ├── service_request/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── service_request.json
+│   │   │   │   ├── service_request.py
+│   │   │   │   └── test_service_request.py
+│   │   │   ├── serviceact/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── serviceact.json
+│   │   │   │   └── serviceact.py
+│   │   │   ├── serviceactobjectitem/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── serviceactobjectitem.json
+│   │   │   │   └── serviceactobjectitem.py
+│   │   │   ├── sla_policy/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── sla_policy.json
+│   │   │   │   └── sla_policy.py
+│   │   │   ├── telegram_email_verification/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── telegram_email_verification.json
+│   │   │   │   └── telegram_email_verification.py
+│   │   │   ├── telegram_user_link/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── telegram_user_link.json
+│   │   │   │   └── telegram_user_link.py
+│   │   │   └── __init__.py
+│   │   ├── overrides/
+│   │   │   ├── __init__.py
+│   │   │   └── query_report.py
+│   │   ├── report/
+│   │   │   ├── invoices_by_project/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── invoices_by_project.js
+│   │   │   │   └── invoices_by_project.py
+│   │   │   ├── project_sites/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── project_sites.js
+│   │   │   │   └── project_sites.py
+│   │   │   ├── service_requests_by_project/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── service_requests_by_project.js
+│   │   │   │   └── service_requests_by_project.py
+│   │   │   └── __init__.py
+│   │   ├── tests/
+│   │   │   ├── __init__.py
+│   │   │   ├── test_admin_api.py
+│   │   │   ├── test_audit_runtime.py
+│   │   │   ├── test_project_site_truth_model.py
+│   │   │   ├── test_query_report_override.py
+│   │   │   ├── test_telegram_project_access.py
+│   │   │   └── test_vault_cutover.py
+│   │   ├── __init__.py
+│   │   └── automation.py
+│   ├── hr/
+│   ├── hr_payroll/
+│   ├── integrations/
+│   │   ├── fastapi_backend/
+│   │   │   ├── bot/
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── telegram_bot.py
+│   │   │   ├── routers/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── auth.py
+│   │   │   │   ├── invoices.py
+│   │   │   │   ├── metrics.py
+│   │   │   │   ├── notifications.py
+│   │   │   │   ├── projects.py
+│   │   │   │   ├── reports.py
+│   │   │   │   └── requests.py
+│   │   │   ├── __init__.py
+│   │   │   ├── __main__.py
+│   │   │   ├── auth.py
+│   │   │   ├── config.py
+│   │   │   ├── frappe_client.py
+│   │   │   └── main.py
+│   │   ├── telegram_bot/
+│   │   │   ├── handlers/
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── commands.py
+│   │   │   ├── __init__.py
+│   │   │   ├── __main__.py
+│   │   │   ├── frappe.py
+│   │   │   ├── main.py
+│   │   │   ├── selftest.py
+│   │   │   └── settings.py
+│   │   ├── __init__.py
+│   │   └── google_drive_folders.py
+│   ├── invoicing/
+│   ├── issue_management/
+│   ├── overrides/
+│   │   ├── __init__.py
+│   │   ├── email_account.py
+│   │   └── query_report.py
+│   ├── patches/
+│   │   ├── v15_0/
+│   │   ├── v15_1/
+│   │   ├── v15_10/
+│   │   │   ├── __init__.py
+│   │   │   ├── migrate_project_site_row_to_truth.py
+│   │   │   ├── rename_legacy_project_site_doctype.py
+│   │   │   └── repair_project_site_truth_names.py
+│   │   ├── v15_2/
+│   │   ├── v15_3/
+│   │   ├── v15_4/
+│   │   ├── v15_5/
+│   │   ├── v15_6/
+│   │   ├── v15_7/
+│   │   │   ├── __init__.py
+│   │   │   ├── add_contract_project_objects_acts_model.py
+│   │   │   ├── backfill_contract_project_links.py
+│   │   │   ├── backfill_contract_service_objects_from_requests.py
+│   │   │   ├── cleanup_ferum_custom_module_defs.py
+│   │   │   ├── create_contract_objects_acts_doctypes.py
+│   │   │   ├── ensure_contract_year_field.py
+│   │   │   ├── export_missing_doctype_files.py
+│   │   │   ├── fix_accounts_settings_exchange_rate.py
+│   │   │   ├── fix_report_invoices_by_project.py
+│   │   │   ├── fix_report_service_requests_by_project.py
+│   │   │   ├── fix_settings_invoice_notification_roles.py
+│   │   │   ├── fix_system_settings_language.py
+│   │   │   ├── fix_workspaces_ferum_custom.py
+│   │   │   ├── fix_workspaces_objects_shortcuts.py
+│   │   │   ├── hide_legacy_service_project_fields.py
+│   │   │   ├── hide_service_project_everywhere.py
+│   │   │   ├── hide_service_project_from_desk.py
+│   │   │   ├── migrate_service_project_to_contracts.py
+│   │   │   ├── migrate_service_project_to_contracts_retry.py
+│   │   │   ├── sync_service_object_from_project.py
+│   │   │   └── transition_legacy_service_doctypes_to_contract_project.py
+│   │   ├── v15_8/
+│   │   │   ├── __init__.py
+│   │   │   └── fix_query_reports_service_requests_and_invoices.py
+│   │   ├── v15_9/
+│   │   │   ├── __init__.py
+│   │   │   ├── add_ferum_p0_roles_and_users.py
+│   │   │   ├── add_project_client_script_p0.py
+│   │   │   ├── add_project_custom_docperms_for_ferum_roles.py
+│   │   │   ├── add_project_documents_file_meta.py
+│   │   │   ├── add_project_documents_ui.py
+│   │   │   ├── add_project_full_cycle_p0.py
+│   │   │   ├── add_project_full_cycle_p0_extras.py
+│   │   │   ├── add_project_p0_enabled_flag.py
+│   │   │   ├── add_project_p0_settings_fields.py
+│   │   │   ├── add_project_project_manager_field.py
+│   │   │   ├── add_project_telegram_users_field.py
+│   │   │   ├── add_project_workflow_p0.py
+│   │   │   ├── add_report_project_sites.py
+│   │   │   ├── add_rusakov_to_all_projects.py
+│   │   │   ├── backfill_project_sites_from_service_objects.py
+│   │   │   ├── backfill_project_sites_from_service_objects_rerun.py
+│   │   │   ├── cleanup_service_request_custom_fields.py
+│   │   │   ├── convert_query_reports_to_script_reports.py
+│   │   │   ├── disable_broken_reports.py
+│   │   │   ├── disable_legacy_service_object_mutations.py
+│   │   │   ├── disable_p0_for_incomplete_projects.py
+│   │   │   ├── ensure_file_home_folder.py
+│   │   │   ├── fix_workspaces_objects_shortcuts_project_sites.py
+│   │   │   ├── hide_unused_project_fields_p0.py
+│   │   │   ├── optimize_workspaces_p0_minimal.py
+│   │   │   ├── update_ferum_p0_users_real_emails.py
+│   │   │   ├── update_file_doc_type_options_project_documents.py
+│   │   │   ├── update_project_client_script_p0_buttons.py
+│   │   │   ├── update_project_documents_ui_contract_upload.py
+│   │   │   ├── update_project_p0_custom_field_labels_ru.py
+│   │   │   └── update_project_workflow_p0_roles.py
+│   │   ├── v15_erp/
+│   │   │   ├── 001_multi_company.sql
+│   │   │   ├── 002_rls.sql
+│   │   │   ├── 010_counterparty_constraints.sql
+│   │   │   ├── 011_project_constraints.sql
+│   │   │   ├── 020_contract_constraints.sql
+│   │   │   ├── 021_contract_stage_constraints.sql
+│   │   │   ├── 030_service_constraints.sql
+│   │   │   ├── 040_invoice_constraints.sql
+│   │   │   ├── 041_payment_constraints.sql
+│   │   │   ├── 042_triggers.sql
+│   │   │   ├── 043_partitions.sql
+│   │   │   ├── 050_quality_helpers.sql
+│   │   │   └── 060_performance.sql
+│   │   ├── v15_mariadb/
+│   │   │   ├── 001_add_company.sql
+│   │   │   ├── 010_counterparty.sql
+│   │   │   ├── 020_contracts.sql
+│   │   │   ├── 030_service.sql
+│   │   │   ├── 040_invoices.sql
+│   │   │   ├── 044_invoice_numbering.sql
+│   │   │   └── 046_invoice_numbering_indexes.sql
+│   │   ├── v1_0_0/
+│   │   ├── v1_0_1/
+│   │   └── __init__.py
+│   ├── project_contract_management/
+│   ├── public/
+│   │   └── .gitkeep
+│   ├── scripts/
+│   ├── security/
+│   │   ├── __init__.py
+│   │   ├── file_permissions.py
+│   │   ├── portal_permissions.py
+│   │   ├── project_access.py
+│   │   ├── project_site_permissions.py
+│   │   ├── service_object_permissions.py
+│   │   └── service_project_permissions.py
+│   ├── services/
+│   │   ├── usecases/
+│   │   ├── __init__.py
+│   │   ├── act_schedule_generator.py
+│   │   ├── acts.py
+│   │   ├── contract_project_sync.py
+│   │   ├── project_documents.py
+│   │   ├── project_documents_config.py
+│   │   ├── project_escalations.py
+│   │   ├── project_full_cycle.py
+│   │   ├── project_users.py
+│   │   └── service_schedule.py
+│   ├── setup/
+│   │   ├── __init__.py
+│   │   ├── audit.py
+│   │   └── tests.py
+│   ├── templates/
+│   │   ├── pages/
+│   │   │   └── __init__.py
+│   │   └── __init__.py
+│   ├── tests/
+│   │   ├── api/
+│   │   └── domain/
+│   ├── translations/
+│   │   └── ru.csv
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── background_jobs.py
+│   │   ├── project_sites.py
+│   │   └── role_resolution.py
+│   ├── work_reporting/
+│   ├── __init__.py
+│   ├── hooks.py
+│   ├── modules.txt
+│   ├── notifications.py
+│   ├── patches.txt
+│   └── security_pqc_rules.py
+├── scripts/
+│   ├── precommit/
+│   │   ├── install.sh
+│   │   ├── pytest_backend.sh
+│   │   ├── run_all.sh
+│   │   └── run_pre_push.sh
+│   ├── prompts/
+│   ├── scaling/
+│   │   └── http_load.py
+│   └── render_env_from_vault.py
+├── telegram_bot/
+│   ├── telegram_bot/
+│   │   ├── handlers/
+│   │   │   ├── __init__.py
+│   │   │   └── commands.py
+│   │   ├── __init__.py
+│   │   ├── frappe.py
+│   │   └── settings.py
+│   ├── __init__.py
+│   ├── main.py
+│   └── selftest.py
+├── .editorconfig
+├── .eslintrc.json
+├── .gitignore
+├── .pre-commit-config.yaml
+├── apps.json
+├── backup-job.yml
+├── Caddyfile
+├── compose.https.yaml
+├── compose.mariadb.yaml
+├── compose.redis.yaml
+├── compose.yaml
+├── DEPLOY.md
+├── DEPLOYMENT_GUIDE.md
+├── DEVELOPMENT_NOTES.md
+├── docker-compose.yml
+├── Dockerfile
+├── gemini.md
+├── instruction.txt
+├── license.txt
+├── pyproject.toml
+├── README.md
+├── RUN.md
+├── System overview.txt
+└── Technical_Specification.txt

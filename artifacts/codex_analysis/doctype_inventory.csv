@@ -1,0 +1,41 @@
+name,module,istable,is_submittable,fields_count,roles_count
+ActSchedule,Ferum Custom,0,0,9,5
+Audit Event,Ferum Custom,0,0,7,1
+ContractServiceObject,Ferum Custom,0,0,8,5
+Custom Attachment,Ferum Custom,0,0,9,6
+Document Attachment Item,Ferum Custom,1,0,2,1
+Document Template,Ferum Custom,0,0,9,3
+Ferum Custom Settings,Ferum Custom,0,0,35,1
+Ferum Invoice Notification Role,Ferum Custom,1,0,1,1
+Financial Detail,Ferum Custom,1,0,4,0
+Invoice,Ferum Custom,0,1,18,5
+Payroll Entry Custom,Ferum Custom,0,1,5,2
+Payroll Entry Item,Ferum Custom,1,0,4,2
+Project Billing Period,Ferum Custom,1,0,14,3
+Project Customer Contact,Ferum Custom,1,0,11,3
+Project Object Item,Ferum Custom,1,0,1,0
+Project Outbound Mail Item,Ferum Custom,1,0,7,3
+Project Site,Ferum Custom,0,0,21,5
+Project Site Equipment Item,Ferum Custom,1,0,5,3
+Project Site Row,Ferum Custom,1,0,5,3
+Project Site Service Plan Item,Ferum Custom,1,0,4,3
+Project Site SLA Policy Item,Ferum Custom,1,0,6,3
+Project Survey Checklist Item,Ferum Custom,1,0,4,3
+Project Telegram User Item,Ferum Custom,1,0,4,3
+Request Photo Attachment Item,Ferum Custom,1,0,2,1
+Service Department,Ferum Custom,0,0,2,4
+Service Log Entry,Ferum Custom,0,0,11,5
+Service Logbook,Ferum Custom,0,0,6,5
+Service Maintenance Schedule,Ferum Custom,0,0,10,3
+Service Maintenance Schedule Item,Ferum Custom,1,0,2,3
+Service Object,Ferum Custom,0,0,7,4
+Service Project,Ferum Custom,0,0,21,5
+Service Report,Ferum Custom,0,1,9,7
+Service Report Document Item,Ferum Custom,1,0,2,1
+Service Report Work Item,Ferum Custom,1,0,5,1
+Service Request,Ferum Custom,0,0,32,6
+ServiceAct,Ferum Custom,0,0,13,4
+ServiceActObjectItem,Ferum Custom,1,0,2,0
+SLA Policy,Ferum Custom,0,0,5,1
+Telegram Email Verification,Ferum Custom,0,0,11,1
+Telegram User Link,Ferum Custom,0,0,6,2
