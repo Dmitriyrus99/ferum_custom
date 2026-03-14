@@ -1,9 +1,9 @@
 import socket
+from importlib import import_module
 from urllib.parse import urlparse
 
 import sentry_sdk
 from fastapi import FastAPI
-from fastapi_limiter import FastAPILimiter
 from redis.asyncio import Redis
 
 from .config import settings
@@ -60,7 +60,10 @@ async def startup():
 	)
 	try:
 		await redis.ping()
-		await FastAPILimiter.init(redis)
+		fastapi_limiter_module = import_module("fastapi_limiter")
+		fastapi_limiter = getattr(fastapi_limiter_module, "FastAPILimiter", None)
+		if fastapi_limiter is not None:
+			await fastapi_limiter.init(redis)
 	except Exception:
 		await redis.close()
 		return
